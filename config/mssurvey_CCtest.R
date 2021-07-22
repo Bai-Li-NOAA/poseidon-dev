@@ -13,7 +13,7 @@ timestep <- stepperyr #5
 # with 5 output steps per year, 0 is Jan-Feb-midMar, 1 is midMar-Apr-May, 
 # 2 is June-July-midAug, 3 is midAug-Sept-Oct, 4 is Nov-Dec (ish)
 
-survey_sample_time <- 3 # fall survey
+survey_sample_time <- 5 # fall survey
 
 #The last timestep to sample
 total_sample <- noutsteps-1 #495
@@ -31,7 +31,7 @@ survboxes <- allboxes
 # survey efficiency (q)
 # should return a perfectly efficient survey 
 surveffic <- data.frame(species=survspp,
-                     efficiency=rep(1.0,length(survspp)))
+                        efficiency=rep(1.0,length(survspp)))
 
 # survey selectivity (agecl based)
 # this is by age class, need to change to use with ANNAGEBIO output
@@ -65,4 +65,3 @@ maxbin <- 200
 # diet sampling parameters
 alphamult <- 10000000
 unidprey <- 0
-
