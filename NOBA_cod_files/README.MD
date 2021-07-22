@@ -1,4 +1,18 @@
-<!-- README.md is generated from README.Rmd. Please edit that file -->
+### NOBA Cod atlantisom2ss conversion
+
+#### Workflow
+
+-   Put `NOBA_sacc_38` folder (Atlantisom output) in the
+    `NOBA_cod_files/` folder
+
+-   Modify `NOBACOD_atlantisom2SS.R` to convert Atlantisom output to SS
+    input.
+
+    -   The SS input files in `NOBA_cod_files/output/B` were used as an
+        templates.
+    -   We have finished conversion for `data.ss`.
+    -   The new SS input files can be save in the
+        `NOBA_cod_files/output/atlantis2ss` folder.
 
 ### NOBA Cod SAM2SS conversion
 
@@ -6,7 +20,7 @@ In this example, we convert NOBA Cod State-space assessment model (SAM)
 inputs to Stock Synthesis (SS) inputs and compare the outputs from the
 two packages.
 
-### Install and library packages
+#### Install and library packages
 
 ``` r
 # install.packages("here")
@@ -34,7 +48,7 @@ library(saconvert)
 library(nmfspalette)
 ```
 
-### Read SAM input data and run SAM
+#### Read SAM input data and run SAM
 
 ``` r
 sam_input_path <- here::here("NOBA_cod_files", "NEAcod-2020", "data")
@@ -139,7 +153,7 @@ sam_fit <- sam.fit(sam_dat, sam_conf, sam_par, silent=TRUE)
     ##  57:     1701.5550: -3.48628 -3.52563 -3.63405 -3.76163 -4.12006 -4.46611 -4.30152 -4.44023 -6.02114 -5.97633 -5.76291 -5.36191 -5.15978 -5.03065 -5.06627 -4.83127 -5.93840 -5.43200 -4.94818 -4.52327 -4.10477 -3.90292 -4.05689 -3.93775 -3.67802 -5.34683 -5.26699 -5.23921 -5.26618 -5.29418 -5.32980 -5.54777 -5.58079 -5.58213 -1.24184 -0.487850 -2.16743 -1.11754 -0.635257 -0.795098 -0.224338 -1.15332  1.32677
     ##  58:     1701.5550: -3.48628 -3.52563 -3.63405 -3.76164 -4.12007 -4.46611 -4.30152 -4.44022 -6.02113 -5.97633 -5.76291 -5.36191 -5.15979 -5.03064 -5.06627 -4.83127 -5.93840 -5.43200 -4.94817 -4.52327 -4.10477 -3.90292 -4.05689 -3.93775 -3.67801 -5.34683 -5.26698 -5.23921 -5.26619 -5.29418 -5.32980 -5.54776 -5.58079 -5.58213 -1.24184 -0.487851 -2.16743 -1.11753 -0.635257 -0.795097 -0.224341 -1.15332  1.32677
 
-### Plot SAM fits
+#### Plot SAM fits
 
 ``` r
 par(mfrow = c(1, 1))
@@ -166,7 +180,7 @@ catchplot(sam_fit)
 
 ![](README_files/figure-gfm/sam_fit-4.png)<!-- -->
 
-### Convert SAM inputs to SS inputs
+#### Convert SAM inputs to SS inputs
 
 ``` r
 # Set up two scenarios
@@ -199,7 +213,7 @@ for (scenario_id in seq_along(scenario_path)){
 }
 ```
 
-### Compare SAM outputs and SS outputs
+#### Compare SAM outputs and SS outputs
 
 ``` r
 sam_output <- data.frame(

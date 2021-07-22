@@ -4,11 +4,19 @@ output:
     variant: gfm
 ---
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
+### NOBA Cod atlantisom2ss conversion
+#### Workflow
+- Put `NOBA_sacc_38` folder (Atlantisom output) in the `NOBA_cod_files/` folder
+- Modify `NOBACOD_atlantisom2SS.R` to convert Atlantisom output to SS input. 
+
+  - The SS input files in `NOBA_cod_files/output/B` were used as an templates. 
+  - We have finished conversion for `data.ss`. 
+  - The new SS input files can be save in the `NOBA_cod_files/output/atlantis2ss` folder.
+   
 ### NOBA Cod SAM2SS conversion
 In this example, we convert NOBA Cod State-space assessment model (SAM) inputs to Stock Synthesis (SS) inputs and compare the outputs from the two packages.
 
-### Install and library packages
+#### Install and library packages
 ```{r, warning = FALSE, message = FALSE}
 # install.packages("here")
 # 
@@ -35,7 +43,7 @@ library(saconvert)
 library(nmfspalette)
 ```
 
-### Read SAM input data and run SAM
+#### Read SAM input data and run SAM
 ```{r, warning = FALSE, message = FALSE}
 sam_input_path <- here::here("NOBA_cod_files", "NEAcod-2020", "data")
 
@@ -77,7 +85,7 @@ sam_fit <- sam.fit(sam_dat, sam_conf, sam_par, silent=TRUE)
 ```
 
 
-### Plot SAM fits
+#### Plot SAM fits
 ```{r, fig.height = 6, sam_fit}
 par(mfrow = c(1, 1))
 ssbplot(sam_fit)
@@ -86,7 +94,7 @@ recplot(sam_fit)
 catchplot(sam_fit)
 ```
 
-### Convert SAM inputs to SS inputs
+#### Convert SAM inputs to SS inputs
 ```{r, warning = FALSE, message = FALSE}
 # Set up two scenarios
 # Scenario A: use selectivity pattern 20 and F method 3 in SS
@@ -118,7 +126,7 @@ for (scenario_id in seq_along(scenario_path)){
 }
 ```
 
-### Compare SAM outputs and SS outputs
+#### Compare SAM outputs and SS outputs
 ```{r, warning = FALSE, message = FALSE, fig.height = 6, sam_ss_comparison}
 sam_output <- data.frame(
   "Year" = c(sam_dat$years),
