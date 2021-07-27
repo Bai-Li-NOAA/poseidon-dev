@@ -9,6 +9,8 @@ library(ggforce)
 library(ggthemes)
 library(stringr)
 
+library(stockassessment)
+
 # Set up d.name and scenario.name
 d.name <- here("NOBA_cod_files", "NOBA_sacc_38")
 scenario.name <- "nordic_runresults_01"
@@ -22,6 +24,10 @@ model_dir <- here::here("NOBA_cod_files", "output", "B")
 # Name of SS data file
 datfile_name <- "data.ss"
 
+# Potential function parameters
+report.ages <- c(1, 8) # Two values, a min and max age used for reporting fishing
+user.od <- file.path(here("NOBA_cod_files", "output", "atlantis2ss")) # A file path to a directory where the resulting files will be saved.
+forN <- 1 # An integer value specifying the number of forecast years for the projections.
 # Write data.ss for Stock Synthesis ------------------------------------------
 
 stocksynthesis.data <- r4ss::SS_readdat_3.30(file.path(
@@ -163,7 +169,7 @@ if (f.method == 2) {
 
 stocksynthesis.data$CPUEinfo <- data.frame(
   "Fleet" = 1:stocksynthesis.data$Nfleets,
-  "Units" = rep(2, stocksynthesis.data$Nfleets), # biomass
+  "Units" = rep(1, stocksynthesis.data$Nfleets), # biomass
   "Errtype" = rep(0, stocksynthesis.data$Nfleets),
   "SD_Report" = rep(0, stocksynthesis.data$Nfleets)
 )
@@ -175,7 +181,7 @@ row.names(stocksynthesis.data$CPUEinfo) <- stocksynthesis.data$fleetnames
 fish_age_comp_data <- read_savedfisheries(d.name, "catchAge") # fishery age class composition
 fish_age_comp_species <- fish_age_comp_data$census[[1]][fish_age_comp_data$census[[1]]$species %in% species, ]
 
-survey_age_comp_data <- read_savedsurvs(d.name, "survAnnAge") # survey annual age composition
+survey_age_comp_data <- read_savedsurvs(d.name, "survAge") # survey annual age composition
 survey_age_comp_ss <- vector("list", length = length(survey_age_comp_data))
 for (i in seq_along(survey_age_comp_data)) {
   species_data <- survey_age_comp_data[[i]][[1]][survey_age_comp_data[[i]][[1]]$species %in% species, ]
@@ -188,7 +194,7 @@ range(fish_age_comp_species$agecl)
 stocksynthesis.data$use_lencomp <- 0 # Use length composition or not?
 
 stocksynthesis.data$N_agebins <- length(unique(survey_age_comp_ss[[1]]$agecl))
-stocksynthesis.data$agebin_vector <- unique(survey_age_comp_ss[[1]]$agecl)
+stocksynthesis.data$agebin_vector <- unique(survey_age_comp_ss[[1]]$agecl) # 1:10
 stocksynthesis.data$N_ageerror_definitions <- 1
 stocksynthesis.data$Nages <- length(unique(survey_age_comp_ss[[1]]$agecl))
 stocksynthesis.data$ageerror <- matrix(c(rep(-1, stocksynthesis.data$Nages + 1), rep(0, stocksynthesis.data$Nages + 1)), nrow = 2, byrow = TRUE)
@@ -238,7 +244,9 @@ fish_age_comp_id <- which(age_comp_flat[[3]]$time %in% fish_timesteps)
 age_comp_flat[[3]]$time <- floor(age_comp_flat[[3]]$time / fstepperyr) + 1
 
 age_bins <- as.character(stocksynthesis.data$agebin_vector)
+
 ## Write age composition data for survey
+stocksynthesis.data$agecomp <- stocksynthesis.data$agecomp[, 1:(9+stocksynthesis.data$Nages)]
 stocksynthesis.data <- SS_write_comps(
   ss_data_list = stocksynthesis.data,
 
@@ -267,7 +275,7 @@ stocksynthesis.data$use_MeanSize_at_Age_obs <- 0
 stocksynthesis.data$MeanSize_at_Age_obs <- NULL
 
 r4ss::SS_writedat(
-  datlist = stocksynthesis.data, verbose = FALSE, outfile = file.path(here("NOBA_cod_files", "output", "atlantis2ss"), "data.ss"),
+  datlist = stocksynthesis.data, verbose = FALSE, outfile = file.path(user.od, "data.ss"),
   overwrite = TRUE
 )
 
@@ -345,20 +353,21 @@ colnames(dmpars) <- colnames(simple_ctl$age_selex_parms)
 colnames(ctl$age_selex_parms) <- colnames(simple_ctl$age_selex_parms)
 ctl$age_selex_parms <- rbind(ctl$age_selex_parms, dmpars)
 
-slx <- 20
+slx <- 26
 
 if (slx == 26) { # Exponential logistic
-  ctl$age_selex_types[1, 1] <- 26
-  ctl$age_selex_parms <- rbind(
-    data.frame(
-      "LO" = rep(0.001, 3),
-      "HI" = c(1, 1, 0.5),
-      "INIT" = c(0.1, 0.5, 0.01),
-      "PRIOR" = 0, "SD" = 0, "PR_TYPE" = 0, "PHASE" = 4,
-      matrix(0, ncol = 7, nrow = 3)
-    ),
-    ctl$age_selex_parms[-(0:stocksynthesis.data$Nages + 1), ]
+  ctl$age_selex_types <- do.call("rbind", replicate(n = stocksynthesis.data$Nfleets, expr = c(26, 0, 0, 0), simplify = FALSE))
+  ctl$age_selex_types <- as.data.frame(ctl$age_selex_types)
+  
+  ctl$age_selex_parms <- data.frame(
+    "LO" = rep(c(0.02, 0.01, 0.001), stocksynthesis.data$Nfleets),
+    "HI" = rep(c(10, 0.99, 1), stocksynthesis.data$Nfleets),
+    "INIT" = rep(c(2, 0.1, 0.9), stocksynthesis.data$Nfleets), # use -999 to decay young and old fish selectivity according to p3 and p4
+    "PRIOR" = 0, "SD" = 1, "PR_TYPE" = 0,
+    "PHASE" = rep(c(2,2,2), stocksynthesis.data$Nfleets), # Fix -999 options and parameters 2 and 4
+    matrix(0, ncol = 7, nrow = stocksynthesis.data$Nfleets)
   )
+  colnames(ctl$age_selex_parms) <- colnames(simple_ctl$age_selex_parms)
 }
 
 if (slx == 12) { # Simple logistic
@@ -413,7 +422,7 @@ ctl$Q_parms <- rbind(data.frame(
 
 # todo: this assumes a time-invariant fixed natural mortality
 ctl$natM_type <- 3
-matage <- rep(0.2, stocksynthesis.data$Nages)
+matage <- rep(0.2, stocksynthesis.data$Nages+1)
 
 if (stocksynthesis.data$Nsexes == 1) {
   ctl$natM <- as.data.frame(matage)
@@ -436,7 +445,7 @@ ctl$SR_parms[grep("sigma", rownames(ctl$SR_parms)), "INIT"] <- 0.5
 ctl$SR_parms[grep("steep", rownames(ctl$SR_parms)), "INIT"] <- 1
 ctl$SR_parms[grep("steep", rownames(ctl$SR_parms)), "PHASE"] <- -1
 ctl$SR_parms[grep("steep", rownames(ctl$SR_parms)), "PR_type"] <- 0
-ctl$SR_parms[grep("LN(R0)", rownames(ctl$SR_parms)), "INIT"] <- log(stocksynthesis.data$catch$catch[1])
+ctl$SR_parms[grep("R0", rownames(ctl$SR_parms)), "INIT"] <- log(max(stocksynthesis.data$catch$catch)*2)
 
 ctl$N_lambdas <- 1
 ctl$lambdas <- ctl$lambdas[-c(1:nrow(ctl$lambdas)), ]
@@ -450,11 +459,11 @@ ctl$stddev_reporting_N_at_A[1] <- -1
 
 if (f.method == 2) {
   ctl$F_Method <- 2
-  ctl$F_setup <- c(0.01, 2, 0.00)
+  ctl$F_setup <- c(0.01, 5, 0.00)
   names(ctl$F_setup) <- c("F_setup_1", "F_setup_2", "F_setup_3")
   ctl$init_F <- data.frame(
     "LO" = 0,
-    "HI" = 1,
+    "HI" = 5,
     "INIT" = 0.01,
     "PRIOR" = 0.01,
     "PR_SD" = 0.2,
@@ -462,10 +471,205 @@ if (f.method == 2) {
     "PHASE" = 1,
     "PType" = 18
   )
+  ctl$maxF <- 5
 }
 
 
 r4ss::SS_writectl(ctl,
-  outfile = file.path(here("NOBA_cod_files", "output", "atlantis2ss"), "control.ss"),
+  outfile = file.path(user.od, "control.ss"),
   overwrite = TRUE, verbose = FALSE, version = "3.30"
 )
+
+
+# Write starter.ss for Stock Synthesis ------------------------------------
+
+stocksynthesis.starter <- r4ss::SS_readstarter(
+  verbose = FALSE,
+  file = dir(utils::tail(dir(system.file("extdata", package = "r4ss"), pattern = "simple", full.names = TRUE), 1), pattern = "starter", full.names = TRUE)
+)
+
+stocksynthesis.starter$sourcefile <- file.path(here("NOBA_cod_files", "output", "atlantis2ss"), "starter.ss")
+stocksynthesis.starter$datfile <- "data.ss"
+stocksynthesis.starter$ctlfile <- "control.ss"
+
+if (is.null(report.ages)) {
+  stocksynthesis.starter$F_age_range <- range(stocksynthesisdata$agebin_vector)
+} else {
+  stocksynthesis.starter$F_age_range <- report.ages
+}
+
+
+stocksynthesis.starter$F_report_basis <- 0
+r4ss::SS_writestarter(stocksynthesis.starter,
+                      dir = user.od,
+                      overwrite = TRUE, warn = FALSE, verbose = FALSE
+)
+
+# Write forecast.ss for Stock Synthesis ------------------------------------
+
+stocksynthesis.forecast <- r4ss::SS_readforecast(
+  verbose = FALSE,
+  file = dir(utils::tail(dir(system.file("extdata", package = "r4ss"), pattern = "simple", full.names = TRUE), 1), pattern = "forecast", full.names = TRUE)
+)
+
+stocksynthesis.forecast$sourcefile <- paste0(user.od, "forecast.ss")
+stocksynthesis.forecast$benchmarks <- 1
+stocksynthesis.forecast$MSY <- 2
+# forecast$SPRtarget
+# forecast$Btarget
+stocksynthesis.forecast$Bmark_years <- rep(c(-999, 0), 5)
+stocksynthesis.forecast$Bmark_relF_Basis <- 2
+stocksynthesis.forecast$Forecast <- 4
+stocksynthesis.forecast$Nforecastyrs <- forN
+# forecast$F_scalar
+stocksynthesis.forecast$Fcast_years <- rep(c(-999, 0), 3)
+stocksynthesis.forecast$Fcast_selex <- 0
+stocksynthesis.forecast$ControlRuleMethod <- 1
+# forecast$BforconstantF
+# forecast$BfornoF
+stocksynthesis.forecast$Flimitfraction <- 1
+stocksynthesis.forecast$FirstYear_for_caps_and_allocations <- max(fish_years) + 1
+r4ss::SS_writeforecast(stocksynthesis.forecast,
+                       dir = user.od,
+                       overwrite = TRUE, verbose = FALSE
+)
+
+
+# Write wtatage.ss for Stock Synthesis ------------------------------------
+
+modify_matrices <- function(matr_to_turn){
+  matr_to_turn$kg <- matr_to_turn$atoutput/1000
+  matr_to_turn <- filter(matr_to_turn, time %in% fish_times)
+  return_mat <-  dcast(data = matr_to_turn,
+                       formula = time ~agecl,
+                       value.var = "kg",
+                       fun.aggregate = mean)
+  
+  return(return_mat)
+}
+
+fish_wtage <- read_savedfisheries(d.name, 'catchWtage') # fishery weight at age class
+fish_wtage_species <- fish_wtage$census[[1]][fish_wtage$census[[1]]$species %in% species, ]
+# fish_annage_wtage <- read_savedfisheries(d.name, 'catchAnnWtage') # fishery weight at annual age
+fish_wtage_species$kg <- fish_wtage_species$atoutput/1000
+catch_meanwt <- modify_matrices(fish_wtage_species)
+
+surv_wtage <- read_savedsurvs(d.name, 'survWtage') # survey weight at age class
+surv_wtage_species <- vector(mode="list", length=length(survnames))
+surv_meanwt <- vector(mode="list", length=length(survnames))
+for (i in 1:length(survnames)){
+  surv_wtage_species[[i]] <- surv_wtage[[survnames[i]]][[1]][surv_wtage[[survnames[i]]][[1]]$species %in% species, ]
+  names(surv_wtage_species)[i] <- survnames[i]
+  surv_wtage_species[[survnames[i]]]$kg <- surv_wtage_species[[survnames[i]]]$atoutput/1000
+  surv_meanwt[[i]] <- modify_matrices(surv_wtage_species[[survnames[i]]])
+}
+# surv_annage_wtage <- read_savedsurvs(d.name, 'survAnnWtage') # survey weight at annual age
+
+waa.array <- array(0, dim = c((stocksynthesis.data$endyr-stocksynthesis.data$styr+1), stocksynthesis.data$Nages, stocksynthesis.data$Nfleets))
+
+fish_waa_id <- which(catch_meanwt$time %in% fish_timesteps)
+waa.array[, as.numeric(names(catch_meanwt)[2:ncol(catch_meanwt)]), 1] <- as.matrix(catch_meanwt[fish_waa_id, names(catch_meanwt)[2:ncol(catch_meanwt)]])
+
+waa.array[, , 2] <- as.matrix(surv_meanwt[[1]][, 2:ncol(surv_meanwt[[1]])])
+waa.array[, , 3] <- as.matrix(surv_meanwt[[2]][, 2:ncol(surv_meanwt[[2]])])
+
+waa.new <- do.call(
+  "rbind",
+  replicate((length(survnames) + 3), data.frame(
+    "Yr" = data_years[[3]],
+    # todo: check season of weight at age
+    "Seas" = 1,
+    "Sex" = 1,
+    "Bio_Pattern" = 1,
+    "BirthSeas" = 1,
+    "Fleet" = 1,
+    "0" = waa.array[, 1, 3],
+    waa.array[, , 3]
+  ), simplify = FALSE)
+)
+
+waa.new$Fleet <- rep(-1:(length(survnames) + 1),
+                     each = stocksynthesis.data$endyr-stocksynthesis.data$styr+1
+)
+
+# Use waa.array[, , 1] for catch WT
+waa.new[waa.new$Fleet==1,] <- do.call(
+  "rbind",
+  replicate(1, data.frame(
+    "Yr" = data_years[[1]],
+    # todo: check season of weight at age
+    "Seas" = 1,
+    "Sex" = 1,
+    "Bio_Pattern" = 1,
+    "BirthSeas" = 1,
+    "Fleet" = 1,
+    "0" = waa.array[, 1, 1],
+    waa.array[, , 1]
+  ), simplify = FALSE)
+)
+
+# Use waa.array[, , 1] for catch WT
+waa.new[waa.new$Fleet==2,] <- do.call(
+  "rbind",
+  replicate(1, data.frame(
+    "Yr" = data_years[[2]],
+    # todo: check season of weight at age
+    "Seas" = 1,
+    "Sex" = 1,
+    "Bio_Pattern" = 1,
+    "BirthSeas" = 1,
+    "Fleet" = 2,
+    "0" = waa.array[, 1, 2],
+    waa.array[, , 2]
+  ), simplify = FALSE)
+)
+
+# waa.new[NROW(waa.new), "Yr"] <- waa.new[NROW(waa.new), "Yr"] * -1
+sam_input_path <- here::here("NOBA_cod_files", "NEAcod-2020", "data")
+
+# Read in data files
+regdat <- grep(".dat",list.files(sam_input_path))
+filenames_ICES <- list.files(sam_input_path)[regdat]
+
+#All objects are now on input_file_list
+input_file_list <- lapply(file.path(sam_input_path,filenames_ICES), read.ices)
+names(input_file_list) <- gsub(".dat","",filenames_ICES)
+
+#Load into function environment as objects
+list2env(input_file_list, environment())
+mo_mean <- apply(mo, 2, mean)[stocksynthesis.data$agebin_vector]
+names(mo_mean) <- stocksynthesis.data$agebin_vector
+mo_matrix <- matrix(rep(mo_mean,each=length(data_years[[3]])),nrow=length(data_years[[3]]))
+
+fecmat <- waa.array[, , 3] * mo_matrix
+colnames(fecmat) <- as.character(stocksynthesis.data$agebin_vector)
+waa.fec <- data.frame(
+  "Yr" = data_years[[3]],
+  "Seas" = 1,
+  "Sex" = 1,
+  "Bio_Pattern" = 1,
+  "BirthSeas" = 1,
+  "Fleet" = -2,
+  "0" = fecmat[, 1],
+  fecmat
+)
+
+waa.new <- rbind(waa.new, waa.fec)
+
+if (stocksynthesis.data$Nsexes == 2) {
+  waa.mal <- waa.new
+  waa.mal$Sex <- 2
+  waa.new <- rbind(waa.new, waa.mal)
+}
+
+waa.forecast <- waa.new[waa.new$Yr == stocksynthesis.data$endyr, ]
+waa.forecast$Yr <- 1 + waa.forecast$Yr
+waa.new <- rbind(waa.new, waa.forecast)
+
+r4ss::SS_writewtatage(
+  mylist = waa.new, dir = user.od,
+  warn = FALSE, verbose = FALSE, overwrite = TRUE
+)
+
+
+
