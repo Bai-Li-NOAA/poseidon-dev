@@ -10,7 +10,7 @@
 
     -   The SS input files in `NOBA_cod_files/output/B` were used as an
         templates.
-    -   We have finished conversion for `data.ss` and `control.ss`.
+    -   We have finished conversion for all SS input files.
     -   The new SS input files can be save in the
         `NOBA_cod_files/output/atlantis2ss` folder.
 
