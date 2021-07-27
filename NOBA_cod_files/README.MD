@@ -8,7 +8,7 @@
 -   Modify `NOBACOD_atlantisom2SS.R` to convert Atlantisom output to SS
     input.
 
-    -   The SS input files in `NOBA_cod_files/output/B` were used as an
+    -   The SS input files in `NOBA_cod_files/output/B` were used as
         templates.
     -   We have finished conversion for all SS input files.
     -   The new SS input files can be save in the
