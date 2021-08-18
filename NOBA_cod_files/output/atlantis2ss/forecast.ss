@@ -1,7 +1,7 @@
 #C forecast file written by R function SS_writeforecast
 #C rerun model to get more complete formatting in forecast.ss_new
 #C should work with SS version: 3.3
-#C file write time: 2021-07-26 18:40:41
+#C file write time: 2021-08-18 15:26:45
 #
 1 #_benchmarks
 2 #_MSY
@@ -25,7 +25,7 @@
 0 #_Forecast_loop_control_3
 1 #_Forecast_loop_control_4
 0 #_Forecast_loop_control_5
-81 #_FirstYear_for_caps_and_allocations
+80 #_FirstYear_for_caps_and_allocations
 0 #_stddev_of_log_catch_ratio
 0 #_Do_West_Coast_gfish_rebuilder_output
 1999 #_Ydecl
