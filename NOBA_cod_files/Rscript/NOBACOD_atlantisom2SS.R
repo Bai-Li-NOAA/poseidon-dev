@@ -12,7 +12,7 @@ library(stringr)
 library(stockassessment)
 
 # Set up d.name and scenario.name
-d.name <- here("NOBA_cod_files", "NOBA_sacc_38")
+d.name <- here::here("NOBA_cod_files", "NOBA_sacc_38")
 scenario.name <- "nordic_runresults_01"
 
 # Set species name
@@ -25,15 +25,18 @@ model_dir <- here::here("NOBA_cod_files", "output", "B")
 datfile_name <- "data.ss"
 
 # Potential function parameters
-report.ages <- c(1, 8) # Two values, a min and max age used for reporting fishing
-user.od <- file.path(here("NOBA_cod_files", "output", "atlantis2ss")) # A file path to a directory where the resulting files will be saved.
+report.ages <- c(1, 18) # Two values, a min and max age used for reporting fishing
+user.od <- file.path(here::here("NOBA_cod_files", "output", "atlantis2ss")) # A file path to a directory where the resulting files will be saved.
 forN <- 1 # An integer value specifying the number of forecast years for the projections.
 # Write data.ss for Stock Synthesis ------------------------------------------
 
-stocksynthesis.data <- r4ss::SS_readdat_3.30(file.path(
-  model_dir,
-  datfile_name
-))
+stocksynthesis.data <- r4ss::SS_readdat(verbose = FALSE,
+                         file = dir(utils::tail(dir(system.file("extdata", package = "r4ss"), pattern = "simple", full.names = TRUE), 1), pattern = "data", full.names = TRUE))
+
+# stocksynthesis.data <- r4ss::SS_readdat_3.30(file.path(
+#   model_dir,
+#   datfile_name
+# ))
 
 # Time dimension parameters
 ## From the project page: https://ices-eg.github.io/wg_WGSAM/SkillAssessProject.html
@@ -67,8 +70,8 @@ fish_burnin <- burnin * fstepperyr + 1
 fish_nyears <- nyears * fstepperyr
 fish_times <- fish_sample_full[fish_burnin:(fish_burnin + fish_nyears - 1)]
 fish_timesteps <- seq(fish_times[fstepperyr], max(fish_times), by = fstepperyr) # last timestep
-fish_years <- unique(floor(fish_times / fstepperyr) + 1) # my original
-# fish_years <- unique(floor(fish_times/fstepperyr)) #from Christine's new sardine_config.R
+#fish_years <- unique(floor(fish_times / fstepperyr) + 1) # my original
+fish_years <- unique(floor(fish_times/fstepperyr)) #from Christine's new sardine_config.R
 
 fishtime <- fish_times
 
@@ -158,8 +161,11 @@ stocksynthesis.data$CPUE
 
 stocksynthesis.data$catch
 
-## f.method works better when we converting ICES SAM Cod to SS Cod
-f.method <- 2
+## f.method 2 works better when we converting ICES SAM Cod to SS Cod
+
+f.method <- 3 # Hybrid (It is a recommended method)
+
+# f.method <- 2 # instan. F
 if (f.method == 2) {
   temp <- stocksynthesis.data$catch[1, ]
   temp$year <- -999
@@ -178,10 +184,10 @@ row.names(stocksynthesis.data$CPUEinfo) <- stocksynthesis.data$fleetnames
 # Writing age composition data
 
 # Read age_comp_data from Atlantisom output
-fish_age_comp_data <- read_savedfisheries(d.name, "catchAge") # fishery age class composition
+fish_age_comp_data <- read_savedfisheries(d.name, 'catchAnnAge') # fishery annual age class composition
 fish_age_comp_species <- fish_age_comp_data$census[[1]][fish_age_comp_data$census[[1]]$species %in% species, ]
 
-survey_age_comp_data <- read_savedsurvs(d.name, "survAge") # survey annual age composition
+survey_age_comp_data <- read_savedsurvs(d.name, 'survAnnAge') # survey annual age composition
 survey_age_comp_ss <- vector("list", length = length(survey_age_comp_data))
 for (i in seq_along(survey_age_comp_data)) {
   species_data <- survey_age_comp_data[[i]][[1]][survey_age_comp_data[[i]][[1]]$species %in% species, ]
@@ -231,13 +237,14 @@ age_comp_flat <- list(
   )
 )
 
-fish_age_comp_flat <- as.data.frame(matrix(0, nrow = nrow(age_comp_flat[[3]]), ncol = ncol(age_comp_flat[[1]])))
-colnames(fish_age_comp_flat) <- colnames(age_comp_flat[[1]])
+# TO-DO: Need to consider the case that fishery age composition is less than fish age composition
+fish_age_comp_flat <- as.data.frame(matrix(0, nrow = nrow(age_comp_flat[[3]]), ncol = ncol(age_comp_flat[[3]])))
+colnames(fish_age_comp_flat) <- colnames(age_comp_flat[[3]])
 fish_age_comp_flat[, colnames(age_comp_flat[[3]])] <- age_comp_flat[[3]]
 
 
-age_comp_flat[[1]]$time <- (age_comp_flat[[1]]$time - survey_sample_time[survnames[1]]) / timestep + 1
-age_comp_flat[[2]]$time <- (age_comp_flat[[2]]$time - survey_sample_time[survnames[2]]) / timestep + 1
+age_comp_flat[[1]]$time <- (age_comp_flat[[1]]$time - survey_sample_time[survnames[1]]) / timestep + 1 # Fall: step 3
+age_comp_flat[[2]]$time <- (age_comp_flat[[2]]$time - survey_sample_time[survnames[2]]) / timestep + 1 # Spring: step 1
 
 age_comp_flat[[3]] <- fish_age_comp_flat
 fish_age_comp_id <- which(age_comp_flat[[3]]$time %in% fish_timesteps)
@@ -246,7 +253,7 @@ age_comp_flat[[3]]$time <- floor(age_comp_flat[[3]]$time / fstepperyr) + 1
 age_bins <- as.character(stocksynthesis.data$agebin_vector)
 
 ## Write age composition data for survey
-stocksynthesis.data$agecomp <- stocksynthesis.data$agecomp[, 1:(9+stocksynthesis.data$Nages)]
+stocksynthesis.data$agecomp <- stocksynthesis.data$agecomp[, 1:9]
 stocksynthesis.data <- SS_write_comps(
   ss_data_list = stocksynthesis.data,
 
@@ -361,7 +368,7 @@ if (slx == 26) { # Exponential logistic
   
   ctl$age_selex_parms <- data.frame(
     "LO" = rep(c(0.02, 0.01, 0.001), stocksynthesis.data$Nfleets),
-    "HI" = rep(c(10, 0.99, 1), stocksynthesis.data$Nfleets),
+    "HI" = rep(c(max(stocksynthesis.data$agebin_vector), 0.99, 1), stocksynthesis.data$Nfleets),
     "INIT" = rep(c(2, 0.1, 0.9), stocksynthesis.data$Nfleets), # use -999 to decay young and old fish selectivity according to p3 and p4
     "PRIOR" = 0, "SD" = 1, "PR_TYPE" = 0,
     "PHASE" = rep(c(2,2,2), stocksynthesis.data$Nfleets), # Fix -999 options and parameters 2 and 4
@@ -441,11 +448,16 @@ if (stocksynthesis.data$Nsexes == 1) {
 # Fix steepness at 1 and sigma_R at 0.5
 ctl$Use_steep_init_equi <- 1
 
+Fmult.y1 <- 0.1
+naa.y1 <- (ctl$natM[1, 1] / (ctl$natM[1, 1] + Fmult.y1)) * stocksynthesis.data$catch$catch[2:nrow(stocksynthesis.data$catch)] / (1 - exp(-ctl$natM[1, 1] - Fmult.y1))
+
+if (naa.y1[1] %in% sort(naa.y1)[1:round(length(naa.y1)/5)]) naa.y1[1] <- 10 * mean(naa.y1)
+
 ctl$SR_parms[grep("sigma", rownames(ctl$SR_parms)), "INIT"] <- 0.5
 ctl$SR_parms[grep("steep", rownames(ctl$SR_parms)), "INIT"] <- 1
 ctl$SR_parms[grep("steep", rownames(ctl$SR_parms)), "PHASE"] <- -1
 ctl$SR_parms[grep("steep", rownames(ctl$SR_parms)), "PR_type"] <- 0
-ctl$SR_parms[grep("R0", rownames(ctl$SR_parms)), "INIT"] <- log(max(stocksynthesis.data$catch$catch)*2)
+ctl$SR_parms[grep("R0", rownames(ctl$SR_parms)), "INIT"] <- log(naa.y1[1])
 
 ctl$N_lambdas <- 1
 ctl$lambdas <- ctl$lambdas[-c(1:nrow(ctl$lambdas)), ]
@@ -493,7 +505,7 @@ stocksynthesis.starter$datfile <- "data.ss"
 stocksynthesis.starter$ctlfile <- "control.ss"
 
 if (is.null(report.ages)) {
-  stocksynthesis.starter$F_age_range <- range(stocksynthesisdata$agebin_vector)
+  stocksynthesis.starter$F_age_range <- range(stocksynthesis.data$agebin_vector)
 } else {
   stocksynthesis.starter$F_age_range <- report.ages
 }
@@ -548,13 +560,13 @@ modify_matrices <- function(matr_to_turn){
   return(return_mat)
 }
 
-fish_wtage <- read_savedfisheries(d.name, 'catchWtage') # fishery weight at age class
+fish_wtage <- read_savedfisheries(d.name, 'catchAnnWtage') # fishery weight at age class
 fish_wtage_species <- fish_wtage$census[[1]][fish_wtage$census[[1]]$species %in% species, ]
-# fish_annage_wtage <- read_savedfisheries(d.name, 'catchAnnWtage') # fishery weight at annual age
 fish_wtage_species$kg <- fish_wtage_species$atoutput/1000
 catch_meanwt <- modify_matrices(fish_wtage_species)
+catch_meanwt[is.na(catch_meanwt)] <- 0
 
-surv_wtage <- read_savedsurvs(d.name, 'survWtage') # survey weight at age class
+surv_wtage <- read_savedsurvs(d.name, 'survAnnWtage') # survey weight at age class
 surv_wtage_species <- vector(mode="list", length=length(survnames))
 surv_meanwt <- vector(mode="list", length=length(survnames))
 for (i in 1:length(survnames)){
@@ -563,7 +575,7 @@ for (i in 1:length(survnames)){
   surv_wtage_species[[survnames[i]]]$kg <- surv_wtage_species[[survnames[i]]]$atoutput/1000
   surv_meanwt[[i]] <- modify_matrices(surv_wtage_species[[survnames[i]]])
 }
-# surv_annage_wtage <- read_savedsurvs(d.name, 'survAnnWtage') # survey weight at annual age
+
 
 waa.array <- array(0, dim = c((stocksynthesis.data$endyr-stocksynthesis.data$styr+1), stocksynthesis.data$Nages, stocksynthesis.data$Nfleets))
 
@@ -637,7 +649,7 @@ names(input_file_list) <- gsub(".dat","",filenames_ICES)
 
 #Load into function environment as objects
 list2env(input_file_list, environment())
-mo_mean <- apply(mo, 2, mean)[stocksynthesis.data$agebin_vector]
+mo_mean <- c(0, 0, apply(mo, 2, mean), 1, 1, 1, 1, 1)
 names(mo_mean) <- stocksynthesis.data$agebin_vector
 mo_matrix <- matrix(rep(mo_mean,each=length(data_years[[3]])),nrow=length(data_years[[3]]))
 
