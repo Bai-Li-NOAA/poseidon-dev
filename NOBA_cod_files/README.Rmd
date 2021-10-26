@@ -6,13 +6,83 @@ output:
 
 ### NOBA Cod atlantisom2ss conversion
 #### Workflow
-- Put `NOBA_sacc_38` folder (Atlantisom output) in the `NOBA_cod_files/` folder
+- Put `NOBA_sacc_30` folder (Atlantisom output) in the `NOBA_cod_files/` folder
 - Modify `NOBACOD_atlantisom2SS.R` to convert Atlantisom output to SS input. 
 
-  - The SS input files in `NOBA_cod_files/output/B` were used as templates. 
   - We have finished conversion for all SS input files.
   - The new SS input files can be save in the `NOBA_cod_files/output/atlantis2ss` folder.
-   
+
+- Still working on maturity at age and weight at age comparison
+```{r, warning = FALSE, message = FALSE, include=FALSE}
+source(here::here("NOBA_cod_files", "Rscript", "NOBACOD_atlantisom2SS.R"))
+source(here::here("NOBA_cod_files", "Rscript", "noba_cod.R"))
+# Maturity at age comparison -----------------------------------------------------
+
+atlantis_maturity <- maturity_mean
+sam_maturity <- cbind(rep(0, nrow(mo)),
+                      rep(0, nrow(mo)),
+                      mo,
+                      rep(1, nrow(mo)),
+                      rep(1, nrow(mo)),
+                      rep(1, nrow(mo)),
+                      rep(1, nrow(mo)),
+                      rep(1, nrow(mo)))
+colnames(sam_maturity) <- 1:20
+
+
+par(mfrow=c(1,1))
+for(i in 1:nrow(sam_maturity)){
+  if (i==1) {
+    plot(sam_maturity[i,], type="o", col="blue",
+         xlab="Age", ylab="Maturity at age")
+  } else {
+    lines(sam_maturity[i,], type="o", col="blue")
+  }
+}
+lines(maturity_mean, type="o", pch=2)
+legend("bottomright",
+       legend=c("SAM", "Atlantis"),
+       col=c("blue", "black"),
+       pch=c(1,2),
+       lty=c(1,1),
+       bty="n"
+)
+
+# Weight at age comparison ------------------------------------------------
+atlantis_waa <- waa.array[,,3]
+sam_waa <- cbind(rep(NA, nrow(sw)),
+                 rep(NA, nrow(sw)),
+                 sw,
+                 rep(NA, nrow(sw)),
+                 rep(NA, nrow(sw)),
+                 rep(NA, nrow(sw)),
+                 rep(NA, nrow(sw)),
+                 rep(NA, nrow(sw)))
+
+ylim <- range(atlantis_waa, sam_waa, na.rm = T)
+par(mfrow=c(1,2))
+for(i in 1:nrow(atlantis_waa)){
+  if (i==1) {
+    plot(atlantis_waa[i,], type="o", 
+         xlab="Age", ylab="Atlantis weight at age",
+         ylim=ylim)
+  } else {
+    lines(atlantis_waa[i,], type="o")
+  }
+}
+
+for(i in 1:nrow(sam_waa)){
+  if (i==1) {
+    plot(sam_waa[i,], type="o", 
+         xlab="Age", ylab="Atlantis weight at age",
+         ylim=ylim)
+  } else {
+    lines(sam_waa[i,], type="o")
+  }
+}
+
+```
+
 ### NOBA Cod SAM2SS conversion
 In this example, we convert NOBA Cod State-space assessment model (SAM) inputs to Stock Synthesis (SS) inputs and compare the outputs from the two packages.
 

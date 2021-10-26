@@ -2,17 +2,17 @@
 
 #### Workflow
 
--   Put `NOBA_sacc_38` folder (Atlantisom output) in the
+-   Put `NOBA_sacc_30` folder (Atlantisom output) in the
     `NOBA_cod_files/` folder
 
 -   Modify `NOBACOD_atlantisom2SS.R` to convert Atlantisom output to SS
     input.
 
-    -   The SS input files in `NOBA_cod_files/output/B` were used as
-        templates.
     -   We have finished conversion for all SS input files.
     -   The new SS input files can be save in the
         `NOBA_cod_files/output/atlantis2ss` folder.
+
+-   Still working on maturity at age and weight at age comparison
 
 ### NOBA Cod SAM2SS conversion
 
