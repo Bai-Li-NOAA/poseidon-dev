@@ -13,7 +13,7 @@ output:
   - The new SS input files can be save in the `NOBA_cod_files/output/atlantis2ss` folder.
 
 - Still working on maturity at age and weight at age comparison
-```{r, warning = FALSE, message = FALSE, include=FALSE}
+```{r, warning = FALSE, message = FALSE, fig.height = 6, maturity_comparison}
 source(here::here("NOBA_cod_files", "Rscript", "NOBACOD_atlantisom2SS.R"))
 source(here::here("NOBA_cod_files", "Rscript", "noba_cod.R"))
 # Maturity at age comparison -----------------------------------------------------
@@ -47,7 +47,9 @@ legend("bottomright",
        lty=c(1,1),
        bty="n"
 )
+```
 
+```{r, warning = FALSE, message = FALSE, fig.height = 6, weight_comparison}
 # Weight at age comparison ------------------------------------------------
 atlantis_waa <- waa.array[,,3]
 sam_waa <- cbind(rep(NA, nrow(sw)),
