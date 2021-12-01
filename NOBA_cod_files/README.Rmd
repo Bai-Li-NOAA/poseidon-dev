@@ -12,79 +12,233 @@ output:
   - We have finished conversion for all SS input files.
   - The new SS input files can be save in the `NOBA_cod_files/output/atlantis2ss` folder.
 
-- Still working on maturity at age and weight at age comparison
-```{r, warning = FALSE, message = FALSE, fig.height = 6, maturity_comparison}
-source(here::here("NOBA_cod_files", "Rscript", "NOBACOD_atlantisom2SS.R"))
-source(here::here("NOBA_cod_files", "Rscript", "noba_cod.R"))
-# Maturity at age comparison -----------------------------------------------------
+- The SS model still did not converge after trying different stock-recruitment models, input values of steepness and standard deviation of the recruitment deviation in log space, and selectivity patterns. The residuals between observed and estimated age compositions were large. 
 
-atlantis_maturity <- maturity_mean
-sam_maturity <- cbind(rep(0, nrow(mo)),
-                      rep(0, nrow(mo)),
-                      mo,
-                      rep(1, nrow(mo)),
-                      rep(1, nrow(mo)),
-                      rep(1, nrow(mo)),
-                      rep(1, nrow(mo)),
-                      rep(1, nrow(mo)))
-colnames(sam_maturity) <- 1:20
+- After removing survey age composition data from the input file, SS had a better final gradient value of 0.00019. The expected landings, landing age compositions, and survey indices match well with the true values from Atlantis. However, the estimated biomass, spawning stock biomass, recruitment, and fishing mortality still did not line up with the true values from Atlantis.
+```{r, warning = FALSE, message = FALSE, fig.height = 6, echo=FALSE}
+# source(here::here("NOBA_cod_files", "Rscript", "comparison_figure.R"))
+# remotes::install_github("r4ss/r4ss")
+library(r4ss)
+library(here)
+require(dplyr)
+library(ggplot2)
+library(ggforce)
+library(ggthemes)
+
+# SS output ---------------------------------------------------------------
+
+# SS output path
+mydir <- here("NOBA_cod_files", "output", "atlantis2ss")
+# read the model output and print diagnostic messages 
+ss_list <- SS_output(dir = mydir, 
+                     verbose = FALSE,
+                     printstats = FALSE)
+
+# plots the SS results
+# SS_plots(ss_list)
 
 
-par(mfrow=c(1,1))
-for(i in 1:nrow(sam_maturity)){
-  if (i==1) {
-    plot(sam_maturity[i,], type="o", col="blue",
-         xlab="Age", ylab="Maturity at age")
-  } else {
-    lines(sam_maturity[i,], type="o", col="blue")
-  }
-}
-lines(maturity_mean, type="o", pch=2)
-legend("bottomright",
-       legend=c("SAM", "Atlantis"),
-       col=c("blue", "black"),
-       pch=c(1,2),
-       lty=c(1,1),
-       bty="n"
-)
+# Atlantis output ---------------------------------------------------------
+# Set up d.name and scenario.name
+d.name <- here::here("NOBA_cod_files", "NOBA_sacc_30")
+scenario.name <- "nordic_runresults_01"
+
+# Atlantis OM truth data
+truth <- get(load(file.path(file.path(d.name, "nordic_runresults_01run_truth.RData"))))
+omlist_ss <- readRDS(file=file.path(d.name, "nordic_runresults_01omlist_ss.rds"))
+
+# Set species name
+species <- c("North_atl_cod")
+species_code <- "NCO"
+
+# Number of years of data to pull (From the project page: https://sgaichas.github.io/poseidon-dev/NOBAcod2.html#)
+nyears <- omlist_ss$runpar$nyears #144
+
+# Atlantis initialization period in years
+burnin <- 0
+
+# fishery output: learned the hard way this can be different from ecosystem outputs
+fstepperyr <- if(omlist_ss$runpar$outputstepunit=="days") 365/omlist_ss$runpar$toutfinc #5
+
+noutsteps <- omlist_ss$runpar$tstop/omlist_ss$runpar$outputstep #720
+timeall <- c(0:noutsteps)
+stepperyr <- if(omlist_ss$runpar$outputstepunit=="days") 365/omlist_ss$runpar$toutinc #5
+midptyr <- round(median(seq(0,stepperyr))) #2
+
+timestep <- stepperyr #5
+
+#The last timestep to sample
+total_sample <- noutsteps-1 #719
+# same time dimensioning parameters as in surveycensus.R
+#Vector of indices of catch in numbers to pull (by timestep to sum)
+fish_sample_full <- c(0:total_sample)  #total_sample defined in sardinesurvey.R #0-719
+fish_burnin <- burnin*fstepperyr+1 #1
+fish_nyears <- nyears*fstepperyr #144*5=720
+fish_times <- fish_sample_full[fish_burnin:(fish_burnin+fish_nyears-1)] #0-719
+fish_timesteps <- seq(fish_times[fstepperyr], max(fish_times), by=fstepperyr) #last timestep: 4, 9, ...719
+#fish_years <- unique(floor(fish_times/fstepperyr)+1) # my original [1-144]
+fish_years <- unique(floor(fish_times/fstepperyr)) #from Christine's new sardine_config.R [0-143]
+
+fishtime <- fish_times #0-719
+
+
+fitstartyr <- 40
+fitendyr <- 79  #Fishery catch-at-age and weight-at-age data year range: 30-79
+
+#Number of years of data to pull
+nyears <- omlist_ss$runpar$nyears #144
+total_sample <- omlist_ss$runpar$tstop/omlist_ss$runpar$outputstep #720
+stepperyr <- if(omlist_ss$runpar$outputstepunit=="days") 365/omlist_ss$runpar$toutinc #5
+
+atlantis_full <- c(0:total_sample)  
+mod_burnin <- fitstartyr*stepperyr+1 #201
+fit_nyears <- fitendyr-fitstartyr+1 #40
+fit_ntimes <- fit_nyears*stepperyr #200
+fittimes <- atlantis_full[mod_burnin:(mod_burnin+fit_ntimes-1)] #200-399
+fit_timesteps <- seq(fittimes[stepperyr], max(fittimes), by=stepperyr) #last timestep
+fit_years <- unique(floor(fittimes/stepperyr)) #from Christine's new sardine_config.R #40-79
+fittimes.days <- fittimes*73 #14600, 14673, ...29127
+
+
+# Comparisons -------------------------------------------------------------
+
+folder_path <- here("atlantisoutput", "NOBA_sacc_30")
+
+# Fall biomass
+fallB <- readRDS(file.path(d.name, paste0(scenario.name,"_BTS_fall_allbox_effic1surveyB.rds")))
+
+fallB_ss <- fallB[[1]] %>%
+  filter(species == "North_atl_cod")
+
+plotB <-ggplot() +
+  geom_line(data=fallB_ss, aes(x=(time-3)/stepperyr,y=atoutput, color="True fall survey B"), 
+            alpha = 10/10) +
+  geom_point(data=ss_list$cpue[which(ss_list$cpue$Fleet==2),], aes(x=Yr,y=Exp*1000, color="SS3 Est B"),
+             alpha = 10/10) + 
+  theme_tufte() +
+  theme(legend.position = "top") +
+  labs(colour=scenario.name) 
+
+plotB +
+  facet_wrap(~species, scales="free") 
+
+
+# Spring biomass
+springB <- readRDS(file.path(d.name, paste0(scenario.name,"_BTS_spring_allbox_effic1surveyB.rds")))
+
+springB_ss <- springB[[1]] %>%
+  filter(species == "North_atl_cod")
+
+plotB <-ggplot() +
+  geom_line(data=springB_ss, aes(x=(time-1)/stepperyr,y=atoutput, color="True spring survey B"), 
+            alpha = 10/10) +
+  geom_point(data=ss_list$cpue[which(ss_list$cpue$Fleet==3),], aes(x=Yr,y=Exp*1000, color="SS3 Est B"),
+             alpha = 10/10) + 
+  theme_tufte() +
+  theme(legend.position = "top") +
+  labs(colour=scenario.name)
+
+plotB +
+  facet_wrap(~species, scales="free") 
+
+# Landings
+trueL <- read.table(file.path(folder_path, "nordic_runresults_01Catch.txt"), header = TRUE)
+trueL_ss <- trueL[which(as.integer(trueL$Time/365) %in% fit_years), species_code]
+
+ssL <- ss_list$timeseries$`sel(B):_1`[ss_list$timeseries$Yr %in% fit_years]*1000
+
+plot(trueL_ss, ylim=range(trueL_ss, ssL), 
+     xlab="Year", ylab="Landings (t)")
+lines(ssL)
+legend("topright",
+       c("True L", "SS3 Est L"),
+       pch=c(1, NA), 
+       lty=c(NA, 1),
+       bty="n")
+
+# Biomass
+trueB <- read.table(file.path(folder_path, "nordic_runresults_01BiomIndx.txt"), header = TRUE)
+
+trueB_ss <- trueB[which(as.integer(trueB$Time/73) %in% fit_timesteps), species_code]
+
+ssB <- ss_list$timeseries$Bio_all[ss_list$timeseries$Yr %in% fit_years]*1000
+
+par(mar = c(5, 4, 4, 4) + 0.3) 
+plot(trueB_ss, 
+     xlab="Year", ylab="True Biomass (t)")
+par(new = TRUE)
+plot(ssB, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
+axis(side=4, at = pretty(range(ssB)))
+mtext("SS Est Biomass (t)", side=4, line=3)
+
+# Spawning stock biomass
+trueSSB <- read.table(file.path(folder_path, "nordic_runresults_01SSB.txt"), header = TRUE)
+trueSSB_ss <- trueSSB[which(as.integer(trueSSB$Time/73) %in% fit_timesteps), species_code]
+
+ssSSB <- ss_list$timeseries$SpawnBio[ss_list$timeseries$Yr %in% fit_years]*1000
+
+par(mar = c(5, 4, 4, 4) + 0.3) 
+plot(trueSSB_ss, 
+     xlab="Year", ylab="True SSB (t)")
+par(new = TRUE)
+plot(ssSSB, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
+axis(side=4, at = pretty(range(ssSSB)))
+mtext("SS Est SSB (t)", side=4, line=3)
+
+# Recruitment
+# mg carbon converted to wet weight in tonnes
+k_wetdry <- truth$biolprm$kgw2d / 1000000000
+
+YOY <- omlist_ss$YOY_ss
+YOY_ss <- YOY %>%
+  select(Time, "NCO.0")
+
+# WARNING only works for CCA because YOY.txt rows 2:end are already in numbers
+# and we are merging out the incorrect and irrelevant YOY row 1 (Time=0)
+# also hardcoded for sardine example
+recnums <- YOY_ss %>%
+  mutate(yr = as.integer(round(YOY_ss$Time)/365)) %>%
+  mutate(recnums = NCO.0/k_wetdry/truth$biolprm$redfieldcn) %>%
+  filter(yr >0)
+
+plotR <-ggplot() +
+  geom_line(data=recnums, aes(x=yr,y=recnums, color="True R"), 
+            alpha = 10/10) +
+  geom_point(data=ss_list$timeseries, aes(x=Yr,y=(Recruit_0*1000), color="SS3 Est R"),
+             alpha = 10/10) +
+  theme_tufte() +
+  theme(legend.position = "top") +
+  labs(colour=scenario.name)
+
+plotR 
+
+# Fishing mortality
+file.mort <- file.path(folder_path, "nordic_runresults_01Mort.txt")
+
+mortish <- read.table(file.mort, header = TRUE)
+
+relF_ss <- mortish %>%
+  select(Time, relF = paste0(species_code, ".F"))
+
+names(ss_list$timeseries)[19]<-"Fmort"
+
+plotF <-ggplot() +
+  geom_line(data=relF_ss, aes(x=Time/365, y=relF, color="True F"), 
+            alpha = 10/10) +
+  geom_point(data=ss_list$timeseries, aes(x=Yr,y=Fmort, color="SS3 Est F"),
+             alpha = 10/10) + 
+  theme_tufte() +
+  theme(legend.position = "top") +
+  labs(colour=scenario.name)
+
+plotF 
+
+# R over SSB
+plot(trueSSB_ss, recnums$recnums[which(as.integer(recnums$Time/73) %in% fit_timesteps)],
+     xlab="True SSB", ylab="True R")
+
+
 ```
-
-```{r, warning = FALSE, message = FALSE, fig.height = 6, weight_comparison}
-# Weight at age comparison ------------------------------------------------
-atlantis_waa <- waa.array[,,3]
-sam_waa <- cbind(rep(NA, nrow(sw)),
-                 rep(NA, nrow(sw)),
-                 sw,
-                 rep(NA, nrow(sw)),
-                 rep(NA, nrow(sw)),
-                 rep(NA, nrow(sw)),
-                 rep(NA, nrow(sw)),
-                 rep(NA, nrow(sw)))
-
-ylim <- range(atlantis_waa, sam_waa, na.rm = T)
-par(mfrow=c(1,2))
-for(i in 1:nrow(atlantis_waa)){
-  if (i==1) {
-    plot(atlantis_waa[i,], type="o", 
-         xlab="Age", ylab="Atlantis weight at age",
-         ylim=ylim)
-  } else {
-    lines(atlantis_waa[i,], type="o")
-  }
-}
-
-for(i in 1:nrow(sam_waa)){
-  if (i==1) {
-    plot(sam_waa[i,], type="o", 
-         xlab="Age", ylab="Atlantis weight at age",
-         ylim=ylim)
-  } else {
-    lines(sam_waa[i,], type="o")
-  }
-}
-
-```
-
 ### NOBA Cod SAM2SS conversion
 In this example, we convert NOBA Cod State-space assessment model (SAM) inputs to Stock Synthesis (SS) inputs and compare the outputs from the two packages.
 
