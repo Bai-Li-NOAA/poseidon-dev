@@ -280,7 +280,7 @@ legend("topright",
 
 # R over SSB
 plot(trueSSB_ss, 
-     ssR,
+     truerec_ss$recnums[(truerec_ss$Time/365) %in% fit_years],
      xlab="True SSB", 
      ylab="True R")
 
