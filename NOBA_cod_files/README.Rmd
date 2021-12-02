@@ -16,10 +16,10 @@ output:
 
 - After removing survey age composition data from the input file, SS had a better final gradient value of 0.00019. The expected landings, landing age compositions, and survey indices match well with the true values from Atlantis. However, the estimated biomass, spawning stock biomass, recruitment, and fishing mortality still did not line up with the true values from Atlantis.
 ```{r, warning = FALSE, message = FALSE, fig.height = 6, echo=FALSE}
-# source(here::here("NOBA_cod_files", "Rscript", "comparison_figure.R"))
 # remotes::install_github("r4ss/r4ss")
 library(r4ss)
 library(here)
+library(tidyr)
 require(dplyr)
 library(ggplot2)
 library(ggforce)
@@ -29,6 +29,7 @@ library(ggthemes)
 
 # SS output path
 mydir <- here("NOBA_cod_files", "output", "atlantis2ss")
+# mydir <- here("NOBA_cod_files", "output", "q")
 # read the model output and print diagnostic messages 
 ss_list <- SS_output(dir = mydir, 
                      verbose = FALSE,
@@ -170,6 +171,11 @@ par(new = TRUE)
 plot(ssB, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
 axis(side=4, at = pretty(range(ssB)))
 mtext("SS Est Biomass (t)", side=4, line=3)
+legend("topright",
+       c("True B", "SS3 Est B"),
+       pch=c(1, NA), 
+       lty=c(NA, 1),
+       bty="n")
 
 # Spawning stock biomass
 trueSSB <- read.table(file.path(folder_path, "nordic_runresults_01SSB.txt"), header = TRUE)
@@ -184,25 +190,35 @@ par(new = TRUE)
 plot(ssSSB, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
 axis(side=4, at = pretty(range(ssSSB)))
 mtext("SS Est SSB (t)", side=4, line=3)
+legend("topright",
+       c("True SSB", "SS3 Est SSB"),
+       pch=c(1, NA), 
+       lty=c(NA, 1),
+       bty="n")
 
 # Recruitment
-# mg carbon converted to wet weight in tonnes
-k_wetdry <- truth$biolprm$kgw2d / 1000000000
 
-YOY <- omlist_ss$YOY_ss
-YOY_ss <- YOY %>%
-  select(Time, "NCO.0")
+nitro <- merge(omlist_ss$biol$kwsr, omlist_ss$biol$kwrr, by = "1")
+names(nitro) <- c("Code", "KWSR", "KWRR")
 
-# WARNING only works for CCA because YOY.txt rows 2:end are already in numbers
-# and we are merging out the incorrect and irrelevant YOY row 1 (Time=0)
-# also hardcoded for sardine example
-recnums <- YOY_ss %>%
-  mutate(yr = as.integer(round(YOY_ss$Time)/365)) %>%
-  mutate(recnums = NCO.0/k_wetdry/truth$biolprm$redfieldcn) %>%
-  filter(yr >0)
+nitro <- nitro %>%
+  group_by(Code) %>%
+  mutate(Nsum = sum(KWSR, KWRR))
+truerec <- omlist_ss$YOY_ss %>% 
+  pivot_longer(-Time, names_to = "Code", values_to = "recwt") %>%
+  mutate(Code = gsub("\\.0", "", Code)) %>%
+  filter(Time>0) %>% # this output not meaningful
+  filter(Time %in% seq(365, max(Time), by=365)) %>%
+  left_join(omlist_ss$funct.group_ss[, c("Code", "Name")]) %>%
+  left_join(nitro) %>%
+  mutate(recnums = (recwt * 50000000.0 / omlist_ss$biol$redfieldcn) / Nsum) %>%
+  group_by(Name) %>%
+  mutate(meanrecnums = mean(recnums))
+
+truerec_ss <- truerec[truerec$Name==species,]
 
 plotR <-ggplot() +
-  geom_line(data=recnums, aes(x=yr,y=recnums, color="True R"), 
+  geom_line(data=truerec_ss, aes(x=Time/365,y=recnums, color="True R"), 
             alpha = 10/10) +
   geom_point(data=ss_list$timeseries, aes(x=Yr,y=(Recruit_0*1000), color="SS3 Est R"),
              alpha = 10/10) +
@@ -211,6 +227,21 @@ plotR <-ggplot() +
   labs(colour=scenario.name)
 
 plotR 
+
+ssR <- ss_list$timeseries$Recruit_0[ss_list$timeseries$Yr %in% fit_years]*1000
+
+par(mar = c(5, 4, 4, 4) + 0.3) 
+plot(fit_years, truerec_ss$recnums[which((truerec_ss$Time/365) %in% fit_years)], 
+     xlab="Year", ylab="True R")
+par(new = TRUE)
+plot(fit_years, ssR, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
+axis(side=4, at = pretty(range(ssR)))
+mtext("SS Est R", side=4, line=3)
+legend("topright",
+       c("True R", "SS3 Est R"),
+       pch=c(1, NA), 
+       lty=c(NA, 1),
+       bty="n")
 
 # Fishing mortality
 file.mort <- file.path(folder_path, "nordic_runresults_01Mort.txt")
@@ -233,12 +264,30 @@ plotF <-ggplot() +
 
 plotF 
 
+ssF <- ss_list$timeseries$Fmort[ss_list$timeseries$Yr %in% fit_years]
+par(mar = c(5, 4, 4, 4) + 0.3) 
+plot(fit_years, relF_ss$relF[(relF_ss$Time/365) %in% fit_years], 
+     xlab="Year", ylab="True F")
+par(new = TRUE)
+plot(fit_years, ssF, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
+axis(side=4, at = pretty(range(ssF)))
+mtext("SS Est F", side=4, line=3)
+legend("topright",
+       c("True F", "SS3 Est F"),
+       pch=c(1, NA), 
+       lty=c(NA, 1),
+       bty="n")
+
 # R over SSB
-plot(trueSSB_ss, recnums$recnums[which(as.integer(recnums$Time/73) %in% fit_timesteps)],
-     xlab="True SSB", ylab="True R")
+plot(trueSSB_ss, 
+     ssR,
+     xlab="True SSB", 
+     ylab="True R")
+
 
 
 ```
+
 ### NOBA Cod SAM2SS conversion
 In this example, we convert NOBA Cod State-space assessment model (SAM) inputs to Stock Synthesis (SS) inputs and compare the outputs from the two packages.
 
