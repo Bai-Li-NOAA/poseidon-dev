@@ -264,6 +264,7 @@ plotF <-ggplot() +
 
 plotF 
 
+# Apical F
 ssF <- ss_list$timeseries$Fmort[ss_list$timeseries$Yr %in% fit_years]
 par(mar = c(5, 4, 4, 4) + 0.3) 
 plot(fit_years, relF_ss$relF[(relF_ss$Time/365) %in% fit_years], 
@@ -272,6 +273,21 @@ par(new = TRUE)
 plot(fit_years, ssF, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
 axis(side=4, at = pretty(range(ssF)))
 mtext("SS Est F", side=4, line=3)
+legend("topright",
+       c("True F", "SS3 Est Apical F"),
+       pch=c(1, NA), 
+       lty=c(NA, 1),
+       bty="n")
+
+# Sum of F at age
+ssF <- apply(ss_list$fatage[ss_list$fatage$Yr %in% fit_years,9:ncol(ss_list$fatage)], 1, sum)
+par(mar = c(5, 4, 4, 4) + 0.3) 
+plot(fit_years, relF_ss$relF[(relF_ss$Time/365) %in% fit_years], 
+     xlab="Year", ylab="True F")
+par(new = TRUE)
+plot(fit_years, ssF, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
+axis(side=4, at = pretty(range(ssF)))
+mtext("SS Est Sum F", side=4, line=3)
 legend("topright",
        c("True F", "SS3 Est F"),
        pch=c(1, NA), 
