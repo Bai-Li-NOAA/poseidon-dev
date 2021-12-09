@@ -319,6 +319,9 @@ stocksynthesis.data <- SS_write_comps(
   bins = list(age_bins, age_bins, age_bins),
   caal_bool = c(FALSE, FALSE, FALSE)
 )
+
+# stocksynthesis.data$agecomp <- stocksynthesis.data$agecomp[which(stocksynthesis.data$agecomp$FltSvy %in% c(2,3)), ]
+
 stocksynthesis.data$agecomp <- stocksynthesis.data$agecomp[which(stocksynthesis.data$agecomp$FltSvy==1), ]
 
 # proportion_sum <- apply(stocksynthesis.data$agecomp[, 10:ncol(stocksynthesis.data$agecomp)], 1, sum)
@@ -510,8 +513,8 @@ ctl$Growth_Age_for_L2 <- utils::tail(stocksynthesis.data$agebin_vector, 1)
 ctl$MG_parms$PHASE[ctl$MG_parms$PHASE > 0] <- ctl$MG_parms$PHASE[ctl$MG_parms$PHASE > 0] * (-1)
 
 
-# ctl$MG_parms[grep("Frac", rownames(ctl$MG_parms)), ] <- c(0.000001, 0.99, 0.5, 0.5, 0.5, 0, -1, 0, 0, 0, 0, 0, 0, 0,14)
-ctl$MG_parms[grep("Frac", rownames(ctl$MG_parms)), ] <- c(0.000001, 0.99, 0.99, 0.99, 0.5, 0, -1, 0, 0, 0, 0, 0, 0, 0,14)
+ctl$MG_parms[grep("Frac", rownames(ctl$MG_parms)), ] <- c(0.000001, 0.99, 0.5, 0.5, 0.5, 0, -1, 0, 0, 0, 0, 0, 0, 0,14)
+# ctl$MG_parms[grep("Frac", rownames(ctl$MG_parms)), ] <- c(0.000001, 0.99, 0.99, 0.99, 0.5, 0, -1, 0, 0, 0, 0, 0, 0, 0,14)
 
 ctl$maturity_option <- 5 # disable maturity and use maturity in wtatage.ss?
 ctl$First_Mature_Age <- as.numeric(which(maturity_mean>0)[1])
@@ -693,13 +696,12 @@ naa.y1 <- (ctl$natM[1, 1] / (ctl$natM[1, 1] + Fmult.y1)) * stocksynthesis.data$c
 if (naa.y1[1] %in% sort(naa.y1)[1:round(length(naa.y1)/5)]) naa.y1[1] <- 10*mean(naa.y1)
 
 ctl$SR_function  <- 3 #3: B-H
-ctl$SR_parms[grep("sigma", rownames(ctl$SR_parms)), "INIT"] <- 0.15
+ctl$SR_parms[grep("sigma", rownames(ctl$SR_parms)), "INIT"] <- 0.1
 ctl$SR_parms[grep("sigma", rownames(ctl$SR_parms)), "PHASE"] <- -2 ###
-ctl$SR_parms[grep("steep", rownames(ctl$SR_parms)), "INIT"] <- 0.26
+ctl$SR_parms[grep("steep", rownames(ctl$SR_parms)), "INIT"] <- 0.99
 ctl$SR_parms[grep("steep", rownames(ctl$SR_parms)), "PHASE"] <- -2 ###
 ctl$SR_parms[grep("steep", rownames(ctl$SR_parms)), "PR_type"] <- 0
 ctl$SR_parms[grep("R0", rownames(ctl$SR_parms)), "INIT"] <- log(naa.y1[1])
-# ctl$SR_parms[grep("R0", rownames(ctl$SR_parms)), "PHASE"] <- -2
 
 ctl$N_lambdas <- 1
 ctl$lambdas <- ctl$lambdas[-c(1:nrow(ctl$lambdas)), ]
@@ -858,51 +860,3 @@ r4ss::SS_writeforecast(stocksynthesis.forecast,
 
 
 
-
-
-# # survey season and other time dimensioning parameters
-# # generalized timesteps all models
-# noutsteps <- omlist_ss$runpar$tstop/omlist_ss$runpar$outputstep
-# timeall <- c(0:noutsteps)
-# stepperyr <- if(omlist_ss$runpar$outputstepunit=="days") 365/omlist_ss$runpar$toutinc
-# midptyr <- round(median(seq(0,stepperyr)))
-# 
-# timestep <- stepperyr
-# 
-# # model areas, subset in surveyconfig
-# allboxes <- c(0:(omlist_ss$boxpars$nbox - 1))
-# 
-# # fishery output: learned the hard way this can be different from ecosystem outputs
-# fstepperyr <- if(omlist_ss$runpar$outputstepunit=="days") 365/omlist_ss$runpar$toutfinc
-# 
-# total_sample <- noutsteps-1 #719
-# 
-# #Vector of indices of catch in numbers to pull (by timestep to sum)
-# fish_sample_full <- c(0:total_sample)  #total_sample defined in sardinesurvey.R
-# fish_burnin <- burnin*fstepperyr+1
-# fish_nyears <- nyears*fstepperyr
-# fish_times <- fish_sample_full[fish_burnin:(fish_burnin+fish_nyears-1)]
-# fish_timesteps <- seq(fish_times[fstepperyr], max(fish_times), by=fstepperyr) #last timestep
-# #fish_years <- unique(floor(fish_times/fstepperyr)+1) # my original
-# fish_years <- unique(floor(fish_times/fstepperyr)) #from Christine's new sardine_config.R
-# 
-# fishtime <- fish_times
-# 
-# fitstartyr <- 40
-# # fitendyr <- 110  #used 120 for sacc38
-# fitendyr <- 80  #fishery age composition ends at year 80?
-# 
-# #Number of years of data to pull
-# nyears <- omlist_ss$runpar$nyears
-# total_sample <- omlist_ss$runpar$tstop/omlist_ss$runpar$outputstep
-# stepperyr <- if(omlist_ss$runpar$outputstepunit=="days") 365/omlist_ss$runpar$toutinc
-# 
-# atlantis_full <- c(0:total_sample)  
-# mod_burnin <- fitstartyr*stepperyr+1
-# fit_nyears <- fitendyr-fitstartyr
-# fit_ntimes <- fit_nyears*stepperyr
-# fittimes <- atlantis_full[mod_burnin:(mod_burnin+fit_ntimes-1)]
-# fit_timesteps <- seq(fittimes[stepperyr], max(fittimes), by=stepperyr) #last timestep
-# fit_years <- unique(floor(fittimes/stepperyr)) #from Christine's new sardine_config.R
-# fittimes.days <- fittimes*73
-# 
