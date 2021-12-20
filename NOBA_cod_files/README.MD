@@ -5,26 +5,75 @@
 -   Put `NOBA_sacc_30` folder (Atlantisom output) in the
     `NOBA_cod_files/` folder
 
--   Modify `NOBACOD_atlantisom2SS.R` to convert Atlantisom output to SS
-    input.
+-   Modify `NOBA_cod_files/Rscript/NOBACOD_atlantisom2SS.R` to convert
+    Atlantisom output to SS input. The NOBACOD\_atlantisom2SS.R helps
+    generate SS input files for the NOBA\_cod\_files/output/atlanis2ss
+    scenario. For scenarios that use depletion-based reduction analysis
+    (NOBA\_cod\_files/output/atlantis2ss\_depletion) and consider
+    initial equilibrium catch
+    (NOBA\_cod\_files/output/atlantis2ss\_initial\_equilibrium\_catch),
+    we modified the input data following the instructions from the
+    \[Stock Synthesis User
+    Manual}(<https://nmfs-stock-synthesis.github.io/ss-documentation/SS330_User_Manual.html>).
 
-    -   We have finished conversion for all SS input files.
-    -   The new SS input files can be save in the
-        `NOBA_cod_files/output/atlantis2ss` folder.
+-   We explored five scenarios and the Stock Synthesis input files for
+    each scenario can be found under NOBA\_cod\_files/output folder
 
--   The SS model still did not converge after trying different
-    stock-recruitment models, input values of steepness and standard
-    deviation of the recruitment deviation in log space, and selectivity
-    patterns. The residuals between observed and estimated age
-    compositions were large.
+    -   atlantis2ss\_full\_data that uses fishery and survey age
+        composition data. Model had strong patterns in age composition
+        residuals and large final gradient value of 6.88787e+08. The
+        estimation model did not converge after trying different
+        stock-recruitment models, input values of steepness and standard
+        deviation of the recruitment deviation in log space, and
+        selectivity patterns.
 
--   After removing survey age composition data from the input file, SS
-    had a better final gradient value of 0.00019. The expected landings,
-    landing age compositions, and survey indices match well with the
-    true values from Atlantis. However, the estimated biomass, spawning
-    stock biomass, recruitment, and fishing mortality still did not line
-    up with the true values from Atlantis.
-    ![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-3.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-4.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-5.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-6.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-7.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-8.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-9.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-10.png)<!-- -->
+    -   atlantis2ss\_surveyagecomp that uses survey age composition data
+        but not fishery age composition data. Model still did not fit
+        well.
+
+    -   atlantis2ss that uses fishery age composition data but not
+        survey age composition data. Model had a better final gradient
+        value and fit. The expected landings, landing age compositions,
+        and survey indices match well with the true values from
+        Atlantis. However, the estimated biomass, spawning stock
+        biomass, recruitment, and fishing mortality still did not line
+        up with the true values from Atlantis.
+
+    -   atlantis2ss\_depletion that adds another survey fleet that takes
+        SSB as its input. The target depletion was set to 0.5 in the end
+        year. Rick Methot thinks this feature should routinely be used
+        in all SS3 configurations. Rick’s insights:
+
+        -   The data show near constant catch for the entire time series
+            and the survey also shows little trend. So little surprise
+            that scale is hard to get right.
+        -   Given that your model has no initial equilibrium catch
+            (catch with year = -999), the SS3 model time series is
+            assuming that the population is virgin in the start year
+            (40).
+        -   Then with no trend in the index data, SS3 is getting all
+            scale info from the composition data. But the composition
+            data show 70% of the fish in the first age bin, beginning
+            in 40. So there is no contrast here either. It seems the
+            Atlantis is generating a population that is already highly
+            depleted by year 40, then SS3 starts in year 40 and is told
+            that the population is virgin going into year 40. Please see
+            thoughts from Rick and Ian Taylor from [the post on SS3
+            public
+            forums](https://vlab.noaa.gov/web/stock-synthesis/public-forums/-/message_boards/message/19365724?_com_liferay_message_boards_web_portlet_MBPortlet_orderByCol=modified-date&_com_liferay_message_boards_web_portlet_MBPortlet_scStart=0&_com_liferay_message_boards_web_portlet_MBPortlet_delta=50&_com_liferay_message_boards_web_portlet_MBPortlet_orderByType=desc&_com_liferay_message_boards_web_portlet_MBPortlet_index=0&_com_liferay_message_boards_web_portlet_MBPortlet_scEnd=50&_com_liferay_message_boards_web_portlet_MBPortlet_resetCur=false&_com_liferay_message_boards_web_portlet_MBPortlet_categoryId=971356&_com_liferay_message_boards_web_portlet_MBPortlet_cur1=1).
+
+    -   atlantis2ss\_initial\_equilibrium\_catch that has initial
+        equilibrium catches in the data.ss and a short parameter setup
+        line (fishing mortality) for initial equilibrium catches in the
+        control.ss.
+
+The figures below show comparisons among Atlantis true values, output
+values from the atlantis2ss\_depletion scenario S1, and output values
+from the atlantis2ss\_initial\_equilibrium\_catch scenario S2 (work in
+progress). Will make a pull request and move everything back to Sarah’s
+repository after talking to Cecilie.
+
+![](README_files/figure-gfm/unnamed-chunk-1-1.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-2.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-3.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-4.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-5.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-6.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-7.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-8.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-9.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-1-10.png)<!-- -->
 
 ### NOBA Cod SAM2SS conversion
 

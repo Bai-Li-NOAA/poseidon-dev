@@ -7,14 +7,26 @@ output:
 ### NOBA Cod atlantisom2ss conversion
 #### Workflow
 - Put `NOBA_sacc_30` folder (Atlantisom output) in the `NOBA_cod_files/` folder
-- Modify `NOBACOD_atlantisom2SS.R` to convert Atlantisom output to SS input. 
 
-  - We have finished conversion for all SS input files.
-  - The new SS input files can be save in the `NOBA_cod_files/output/atlantis2ss` folder.
+- Modify `NOBA_cod_files/Rscript/NOBACOD_atlantisom2SS.R` to convert Atlantisom output to SS input. The NOBACOD_atlantisom2SS.R helps generate SS input files for the NOBA_cod_files/output/atlanis2ss scenario. For scenarios that use depletion-based reduction analysis (NOBA_cod_files/output/atlantis2ss_depletion) and consider initial equilibrium catch (NOBA_cod_files/output/atlantis2ss_initial_equilibrium_catch), we modified the input data following the instructions from the [Stock Synthesis User Manual}(https://nmfs-stock-synthesis.github.io/ss-documentation/SS330_User_Manual.html). 
 
-- The SS model still did not converge after trying different stock-recruitment models, input values of steepness and standard deviation of the recruitment deviation in log space, and selectivity patterns. The residuals between observed and estimated age compositions were large. 
+- We explored five scenarios and the Stock Synthesis input files for each scenario can be found under NOBA_cod_files/output folder
 
-- After removing survey age composition data from the input file, SS had a better final gradient value of 0.00019. The expected landings, landing age compositions, and survey indices match well with the true values from Atlantis. However, the estimated biomass, spawning stock biomass, recruitment, and fishing mortality still did not line up with the true values from Atlantis.
+  - atlantis2ss_full_data that uses fishery and survey age composition data. Model had strong patterns in age composition residuals and large final gradient value of 6.88787e+08. The estimation model did not converge after trying different stock-recruitment models, input values of steepness and standard deviation of the recruitment deviation in log space, and selectivity patterns.
+
+  - atlantis2ss_surveyagecomp that uses survey age composition data but not fishery age composition data. Model still did not fit well. 
+
+  - atlantis2ss that uses fishery age composition data but not survey age composition data. Model had a better final gradient value and fit. The expected landings, landing age compositions, and survey indices match well with the true values from Atlantis. However, the estimated biomass, spawning stock biomass, recruitment, and fishing mortality still did not line up with the true values from Atlantis.
+  
+  - atlantis2ss_depletion that adds another survey fleet that takes SSB as its input. The target depletion was set to 0.5 in the end year. Rick Methot thinks this feature should routinely be used in all SS3 configurations. Rick's insights: 
+    - The data show near constant catch for the entire time series and the survey also shows little trend. So little surprise that scale is hard to get right.
+    - Given that your model has no initial equilibrium catch (catch with year = -999), the SS3 model time series is assuming that the population is virgin in the start year (40).
+    - Then with no trend in the index data, SS3 is getting all scale info from the composition data.  But the composition data show 70% of the fish in the first age bin, beginning in 40.  So there is no contrast here either.  It seems the Atlantis is generating a population that is already highly depleted by year 40, then SS3 starts in year 40 and is told that the population is virgin going into year 40. Please see thoughts from Rick and Ian Taylor from [the post on SS3 public forums](https://vlab.noaa.gov/web/stock-synthesis/public-forums/-/message_boards/message/19365724?_com_liferay_message_boards_web_portlet_MBPortlet_orderByCol=modified-date&_com_liferay_message_boards_web_portlet_MBPortlet_scStart=0&_com_liferay_message_boards_web_portlet_MBPortlet_delta=50&_com_liferay_message_boards_web_portlet_MBPortlet_orderByType=desc&_com_liferay_message_boards_web_portlet_MBPortlet_index=0&_com_liferay_message_boards_web_portlet_MBPortlet_scEnd=50&_com_liferay_message_boards_web_portlet_MBPortlet_resetCur=false&_com_liferay_message_boards_web_portlet_MBPortlet_categoryId=971356&_com_liferay_message_boards_web_portlet_MBPortlet_cur1=1).
+  
+  - atlantis2ss_initial_equilibrium_catch that has initial equilibrium catches in the data.ss and a short parameter setup line (fishing mortality) for initial equilibrium catches in the control.ss. 
+
+The figures below show comparisons among Atlantis true values, output values from the atlantis2ss_depletion scenario S1, and output values from the atlantis2ss_initial_equilibrium_catch scenario S2 (work in progress). Will make a pull request and move everything back to Sarah's repository after talking to Cecilie.  
+
 ```{r, warning = FALSE, message = FALSE, fig.height = 6, echo=FALSE}
 # remotes::install_github("r4ss/r4ss")
 library(r4ss)
@@ -28,15 +40,18 @@ library(ggthemes)
 # SS output ---------------------------------------------------------------
 
 # SS output path
-# mydir <- here("NOBA_cod_files", "output", "atlantis2ss")
-mydir <- here("NOBA_cod_files", "output", "atlantis2ss_depletion")
+mydir <- here("NOBA_cod_files", "output")
 # read the model output and print diagnostic messages 
-ss_list <- SS_output(dir = mydir, 
+ss_depletion <- SS_output(dir = file.path(mydir, "atlantis2ss_depletion"), 
+                     verbose = FALSE,
+                     printstats = FALSE)
+ss_initial_equilibrium_catch <- SS_output(dir = file.path(mydir, "atlantis2ss_initial_equilibrium_catch"), 
                      verbose = FALSE,
                      printstats = FALSE)
 
 # plots the SS results
-# SS_plots(ss_list)
+# SS_plots(ss_depletion)
+# SS_plots(ss_initial_equilibrium_catch)
 
 
 # Atlantis output ---------------------------------------------------------
@@ -114,8 +129,10 @@ fallB_ss <- fallB[[1]] %>%
 plotB <-ggplot() +
   geom_line(data=fallB_ss, aes(x=(time-3)/stepperyr,y=atoutput, color="True fall survey B"), 
             alpha = 10/10) +
-  geom_point(data=ss_list$cpue[which(ss_list$cpue$Fleet==2),], aes(x=Yr,y=Exp*1000, color="SS3 Est B"),
+  geom_point(data=ss_depletion$cpue[which(ss_depletion$cpue$Fleet==2),], aes(x=Yr,y=Exp*1000, color="SS3 S1 Est B"),
              alpha = 10/10) + 
+  geom_point(data=ss_initial_equilibrium_catch$cpue[which(ss_initial_equilibrium_catch$cpue$Fleet==2),], aes(x=Yr,y=Exp*1000, color="SS3 S2 Est B"),
+             alpha = 10/10) +
   theme_tufte() +
   theme(legend.position = "top") +
   labs(colour=scenario.name) 
@@ -133,7 +150,9 @@ springB_ss <- springB[[1]] %>%
 plotB <-ggplot() +
   geom_line(data=springB_ss, aes(x=(time-1)/stepperyr,y=atoutput, color="True spring survey B"), 
             alpha = 10/10) +
-  geom_point(data=ss_list$cpue[which(ss_list$cpue$Fleet==3),], aes(x=Yr,y=Exp*1000, color="SS3 Est B"),
+  geom_point(data=ss_depletion$cpue[which(ss_depletion$cpue$Fleet==3),], aes(x=Yr,y=Exp*1000, color="SS3 S1 Est B"),
+             alpha = 10/10) + 
+  geom_point(data=ss_initial_equilibrium_catch$cpue[which(ss_initial_equilibrium_catch$cpue$Fleet==3),], aes(x=Yr,y=Exp*1000, color="SS3 S2 Est B"),
              alpha = 10/10) + 
   theme_tufte() +
   theme(legend.position = "top") +
@@ -146,15 +165,17 @@ plotB +
 trueL <- read.table(file.path(folder_path, "nordic_runresults_01Catch.txt"), header = TRUE)
 trueL_ss <- trueL[which(as.integer(trueL$Time/365) %in% fit_years), species_code]
 
-ssL <- ss_list$timeseries$`sel(B):_1`[ss_list$timeseries$Yr %in% fit_years]*1000
+ssL1 <- ss_depletion$timeseries$`sel(B):_1`[ss_depletion$timeseries$Yr %in% fit_years]*1000
+ssL2 <- ss_depletion$timeseries$`sel(B):_1`[ss_initial_equilibrium_catch$timeseries$Yr %in% fit_years]*1000
 
-plot(trueL_ss, ylim=range(trueL_ss, ssL), 
+plot(trueL_ss, ylim=range(trueL_ss, ssL1, ssL2), 
      xlab="Year", ylab="Landings (t)")
-lines(ssL)
+lines(ssL1, lty=1)
+lines(ssL2, lty=2)
 legend("topright",
-       c("True L", "SS3 Est L"),
-       pch=c(1, NA), 
-       lty=c(NA, 1),
+       c("True L", "SS3 S1 Est L", "SS3 S2 Est L"),
+       pch=c(1, NA, NA), 
+       lty=c(NA, 1, 2),
        bty="n")
 
 # Biomass
@@ -162,38 +183,42 @@ trueB <- read.table(file.path(folder_path, "nordic_runresults_01BiomIndx.txt"), 
 
 trueB_ss <- trueB[which(as.integer(trueB$Time/73) %in% fit_timesteps), species_code]
 
-ssB <- ss_list$timeseries$Bio_all[ss_list$timeseries$Yr %in% fit_years]*1000
+ssB1 <- ss_depletion$timeseries$Bio_all[ss_depletion$timeseries$Yr %in% fit_years]*1000
+ssB2 <- ss_initial_equilibrium_catch$timeseries$Bio_all[ss_initial_equilibrium_catch$timeseries$Yr %in% fit_years]*1000
 
 par(mar = c(5, 4, 4, 4) + 0.3) 
 plot(trueB_ss, 
      xlab="Year", ylab="True Biomass (t)")
 par(new = TRUE)
-plot(ssB, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
-axis(side=4, at = pretty(range(ssB)))
+plot(ssB1, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
+lines(ssB2, lty=2)
+axis(side=4, at = pretty(range(ssB1, ssB2)))
 mtext("SS Est Biomass (t)", side=4, line=3)
 legend("topright",
-       c("True B", "SS3 Est B"),
-       pch=c(1, NA), 
-       lty=c(NA, 1),
+       c("True B", "SS3 S1 Est B", "SS3 S2 Est B"),
+       pch=c(1, NA, NA), 
+       lty=c(NA, 1, 2),
        bty="n")
 
 # Spawning stock biomass
 trueSSB <- read.table(file.path(folder_path, "nordic_runresults_01SSB.txt"), header = TRUE)
 trueSSB_ss <- trueSSB[which(as.integer(trueSSB$Time/73) %in% fit_timesteps), species_code]
 
-ssSSB <- ss_list$timeseries$SpawnBio[ss_list$timeseries$Yr %in% fit_years]*1000
+ssSSB1 <- ss_depletion$timeseries$SpawnBio[ss_depletion$timeseries$Yr %in% fit_years]*1000
+ssSSB2 <- ss_initial_equilibrium_catch$timeseries$SpawnBio[ss_initial_equilibrium_catch$timeseries$Yr %in% fit_years]*1000
 
 par(mar = c(5, 4, 4, 4) + 0.3) 
 plot(trueSSB_ss, 
      xlab="Year", ylab="True SSB (t)")
 par(new = TRUE)
-plot(ssSSB, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
-axis(side=4, at = pretty(range(ssSSB)))
+plot(ssSSB1, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
+lines(ssSSB2, lty=2)
+axis(side=4, at = pretty(range(ssSSB1, ssSSB2)))
 mtext("SS Est SSB (t)", side=4, line=3)
 legend("topright",
-       c("True SSB", "SS3 Est SSB"),
-       pch=c(1, NA), 
-       lty=c(NA, 1),
+       c("True SSB", "SS3 S1 Est SSB", "SS3 S2 Est SSB"),
+       pch=c(1, NA, NA), 
+       lty=c(NA, 1, 1),
        bty="n")
 
 # Recruitment
@@ -220,7 +245,9 @@ truerec_ss <- truerec[truerec$Name==species,]
 plotR <-ggplot() +
   geom_line(data=truerec_ss, aes(x=Time/365,y=recnums, color="True R"), 
             alpha = 10/10) +
-  geom_point(data=ss_list$timeseries, aes(x=Yr,y=(Recruit_0*1000), color="SS3 Est R"),
+  geom_point(data=ss_depletion$timeseries, aes(x=Yr,y=(Recruit_0*1000), color="SS3 S1 Est R"),
+             alpha = 10/10) +
+  geom_point(data=ss_initial_equilibrium_catch$timeseries, aes(x=Yr,y=(Recruit_0*1000), color="SS3 S2 Est R"),
              alpha = 10/10) +
   theme_tufte() +
   theme(legend.position = "top") +
@@ -228,19 +255,21 @@ plotR <-ggplot() +
 
 plotR 
 
-ssR <- ss_list$timeseries$Recruit_0[ss_list$timeseries$Yr %in% fit_years]*1000
+ssR1 <- ss_depletion$timeseries$Recruit_0[ss_depletion$timeseries$Yr %in% fit_years]*1000
+ssR2 <- ss_initial_equilibrium_catch$timeseries$Recruit_0[ss_initial_equilibrium_catch$timeseries$Yr %in% fit_years]*1000
 
 par(mar = c(5, 4, 4, 4) + 0.3) 
 plot(fit_years, truerec_ss$recnums[which((truerec_ss$Time/365) %in% fit_years)], 
      xlab="Year", ylab="True R")
 par(new = TRUE)
-plot(fit_years, ssR, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
-axis(side=4, at = pretty(range(ssR)))
+plot(fit_years, ssR1, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
+lines(fit_years, ssR2, lty=2)
+axis(side=4, at = pretty(range(ssR1, ssR2)))
 mtext("SS Est R", side=4, line=3)
 legend("topright",
-       c("True R", "SS3 Est R"),
-       pch=c(1, NA), 
-       lty=c(NA, 1),
+       c("True R", "SS3 S1 Est R", "SS3 S2 Est R"),
+       pch=c(1, NA, NA), 
+       lty=c(NA, 1, 2),
        bty="n")
 
 # Fishing mortality
@@ -251,12 +280,15 @@ mortish <- read.table(file.mort, header = TRUE)
 relF_ss <- mortish %>%
   select(Time, relF = paste0(species_code, ".F"))
 
-names(ss_list$timeseries)[19]<-"Fmort"
+names(ss_depletion$timeseries)[19]<-"Fmort"
+names(ss_initial_equilibrium_catch$timeseries)[19]<-"Fmort"
 
 plotF <-ggplot() +
   geom_line(data=relF_ss, aes(x=Time/365, y=relF, color="True F"), 
             alpha = 10/10) +
-  geom_point(data=ss_list$timeseries, aes(x=Yr,y=Fmort, color="SS3 Est F"),
+  geom_point(data=ss_depletion$timeseries, aes(x=Yr,y=Fmort, color="SS3 S1 Est F"),
+             alpha = 10/10) + 
+  geom_point(data=ss_initial_equilibrium_catch$timeseries, aes(x=Yr,y=Fmort, color="SS3 S2 Est F"),
              alpha = 10/10) + 
   theme_tufte() +
   theme(legend.position = "top") +
@@ -264,18 +296,20 @@ plotF <-ggplot() +
 
 plotF 
 
-ssF <- ss_list$timeseries$Fmort[ss_list$timeseries$Yr %in% fit_years]
+ssF1 <- ss_depletion$timeseries$Fmort[ss_depletion$timeseries$Yr %in% fit_years]
+ssF2 <- ss_initial_equilibrium_catch$timeseries$Fmort[ss_initial_equilibrium_catch$timeseries$Yr %in% fit_years]
 par(mar = c(5, 4, 4, 4) + 0.3) 
 plot(fit_years, relF_ss$relF[(relF_ss$Time/365) %in% fit_years], 
      xlab="Year", ylab="True F")
 par(new = TRUE)
-plot(fit_years, ssF, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
-axis(side=4, at = pretty(range(ssF)))
+plot(fit_years, ssF1, type = "l", axes = FALSE, bty = "n", xlab = "", ylab = "")
+lines(fit_years, ssF2, lty=2)
+axis(side=4, at = pretty(range(ssF1, ssF2)))
 mtext("SS Est F", side=4, line=3)
 legend("topright",
        c("True F", "SS3 Est F"),
-       pch=c(1, NA), 
-       lty=c(NA, 1),
+       pch=c(1, NA, NA), 
+       lty=c(NA, 1, 2),
        bty="n")
 
 # R over SSB
