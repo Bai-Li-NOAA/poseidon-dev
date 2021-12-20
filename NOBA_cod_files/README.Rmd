@@ -8,7 +8,7 @@ output:
 #### Workflow
 - Put `NOBA_sacc_30` folder (Atlantisom output) in the `NOBA_cod_files/` folder
 
-- Modify `NOBA_cod_files/Rscript/NOBACOD_atlantisom2SS.R` to convert Atlantisom output to SS input. The NOBACOD_atlantisom2SS.R helps generate SS input files for the NOBA_cod_files/output/atlanis2ss scenario. For scenarios that use depletion-based reduction analysis (NOBA_cod_files/output/atlantis2ss_depletion) and consider initial equilibrium catch (NOBA_cod_files/output/atlantis2ss_initial_equilibrium_catch), we modified the input data following the instructions from the [Stock Synthesis User Manual}(https://nmfs-stock-synthesis.github.io/ss-documentation/SS330_User_Manual.html). 
+- Modify `NOBA_cod_files/Rscript/NOBACOD_atlantisom2SS.R` to convert Atlantisom output to SS input. The NOBACOD_atlantisom2SS.R helps generate SS input files for the NOBA_cod_files/output/atlanis2ss scenario. For scenarios that use depletion-based reduction analysis (NOBA_cod_files/output/atlantis2ss_depletion) and consider initial equilibrium catch (NOBA_cod_files/output/atlantis2ss_initial_equilibrium_catch), we modified the input data following the instructions from the [Stock Synthesis User Manual](https://nmfs-stock-synthesis.github.io/ss-documentation/SS330_User_Manual.html). 
 
 - We explored five scenarios and the Stock Synthesis input files for each scenario can be found under NOBA_cod_files/output folder
 

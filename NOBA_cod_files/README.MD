@@ -13,8 +13,8 @@
     initial equilibrium catch
     (NOBA\_cod\_files/output/atlantis2ss\_initial\_equilibrium\_catch),
     we modified the input data following the instructions from the
-    \[Stock Synthesis User
-    Manual}(<https://nmfs-stock-synthesis.github.io/ss-documentation/SS330_User_Manual.html>).
+    [Stock Synthesis User
+    Manual](https://nmfs-stock-synthesis.github.io/ss-documentation/SS330_User_Manual.html).
 
 -   We explored five scenarios and the Stock Synthesis input files for
     each scenario can be found under NOBA\_cod\_files/output folder
