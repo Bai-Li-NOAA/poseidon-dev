@@ -353,7 +353,7 @@ library(nmfspalette)
 ```
 
 #### Read SAM input data and run SAM
-```{r, warning = FALSE, message = FALSE}
+```{r, warning = FALSE, message = FALSE, results = FALSE}
 sam_input_path <- here::here("NOBA_cod_files", "NEAcod-2020", "data")
 
 # Read in data files
@@ -446,49 +446,60 @@ sam_output <- data.frame(
 )
 
 ss_output <- list()
-for (scenario_id in seq_along(scenario_path)){
+for (scenario_id in seq_along(scenario_path)) {
   ss_output_path <- here::here("NOBA_cod_files", "output", scenario_path[scenario_id])
-  ss_output_data <- SS_output(dir = ss_output_path, verbose = F, printstats = F)
+  ss_output_data <- SS_output(dir = ss_output_path, verbose = T, printstats = T)
   ss_output[[scenario_id]] <- data.frame(
     "Year" = sam_output$Year,
     "SSB" = ss_output_data$timeseries$SpawnBio[ss_output_data$timeseries$Yr %in% sam_output$Year],
-    "Recruits" = ss_output_data$timeseries$Recruit_0[ss_output_data$timeseries$Yr %in% (sam_output$Year-1)],
+    "Recruits" = ss_output_data$timeseries$Recruit_0[ss_output_data$timeseries$Yr %in% (sam_output$Year - 1)],
     "F" = ss_output_data$timeseries$`F:_1`[ss_output_data$timeseries$Yr %in% sam_output$Year],
     "Catch" = ss_output_data$timeseries$`sel(B):_1`[ss_output_data$timeseries$Yr %in% sam_output$Year]
   )
 }
 
 var <- c("SSB", "Recruits", "F", "Catch")
-var_label <- c("SSB", "Recruits (Age 3)", expression(F[9-13]), "Catch (in weight)")
-colors <- nmfspalette::nmfs_palette("regional web")(length(scenario_path)+1)
+var_label <- c("SSB", "Recruits (Age 3)", expression(F[9 - 13]), "Catch (in weight)")
+colors <- nmfspalette::nmfs_palette("regional web")(length(scenario_path) + 1)
 
 par(mfrow = c(2, 2), mar = c(4, 4, 1, 1))
 
-for (i in seq_along(var)){
+for (i in seq_along(var)) {
   plot(NA,
-       type="n",
-       xlim = range(sam_output$Year),
-       ylim = range(sam_output[, var[i]], na.rm = T),
-       xlab = "Year",
-       ylab = var_label[i]
+    type = "n",
+    xlim = range(sam_output$Year),
+    ylim = range(sam_output[, var[i]], unlist(lapply(ss_output, "[", , var[i])), na.rm = T),
+    xlab = "Year",
+    ylab = var_label[i]
   )
   lines(sam_output$Year,
-        sam_output[, var[i]],
-        lty=1,
-        col=colors[1])
-  for (j in seq_along(scenario_path)){
+    sam_output[, var[i]],
+    # type="o",
+    # pch=1,
+    # cex=0.6,
+    lty = 1,
+    col = colors[1]
+  )
+  for (j in seq_along(scenario_path)) {
     lines(ss_output[[j]]$Year,
-          ss_output[[j]][, var[i]],
-          lty=j+1,
-          col=colors[j+1])
+      ss_output[[j]][, var[i]],
+      # type="o",
+      # pch=j+1,
+      # cex=0.6,
+      lty = j + 1,
+      col = colors[j + 1]
+    )
   }
 }
 
-legend("top", 
-       c("SAM", paste("SS_", scenario_path)),
-       lty = seq_along(colors),
-       col = colors,
-       bty="n")
+legend("top",
+  c("SAM", paste("SS_", scenario_path)),
+  # pch = seq_along(colors),
+  lty = seq_along(colors),
+  col = colors,
+  bty = "n"
+)
+
 ```
 
 
