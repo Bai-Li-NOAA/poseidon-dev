@@ -485,7 +485,7 @@ waa.new <- rbind(waa.new, waa.forecast)
 waa.new$X0 <- 0
 r4ss::SS_writewtatage(
   mylist = waa.new, dir = user.od,
-  warn = FALSE, verbose = FALSE, overwrite = TRUE
+  verbose = FALSE, overwrite = TRUE
 )
 
 
@@ -826,7 +826,7 @@ stocksynthesis.starter$F_report_basis <- 0
 
 r4ss::SS_writestarter(stocksynthesis.starter,
                       dir = user.od,
-                      overwrite = TRUE, warn = FALSE, verbose = FALSE
+                      overwrite = TRUE, verbose = FALSE
 )
 
 # Write forecast.ss for Stock Synthesis ------------------------------------
