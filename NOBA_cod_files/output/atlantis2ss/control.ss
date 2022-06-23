@@ -30,7 +30,7 @@
 #
 # setup for M, growth, maturity, fecundity, recruitment distibution, movement
 #
-3 #_natM_type:_0=1Parm; 1=N_breakpoints;_2=Lorenzen;_3=agespecific;_4=agespec_withseasinterpolate
+3 #_natM_type:_0=1Parm; 1=N_breakpoints;_2=Lorenzen;_3=agespecific;_4=agespec_withseasinterpolate;_5=Maunder_M;_6=Age-range_Lorenzen
 #_ #_Age_natmort_by sex x growthpattern
 #_matage
 0.2	#_1 
@@ -70,19 +70,19 @@
 #
 #_growth_parms
 #_LO	HI	INIT	PRIOR	PR_SD	PR_type	PHASE	env_var&link	dev_link	dev_minyr	dev_maxyr	dev_PH	Block	Block_Fxn
--1e+01	45.00	21.65350000	36.00000000	10.0	6	-2	0	0	0	0	0	0	0	#_L_at_Amin_Fem_GP_1       
- 4e+01	90.00	71.64930000	70.00000000	10.0	6	-4	0	0	0	0	0	0	0	#_L_at_Amax_Fem_GP_1       
- 5e-02	 0.25	 0.14729700	 0.15000000	 0.8	6	-4	0	0	0	0	0	0	0	#_VonBert_K_Fem_GP_1       
- 5e-02	 0.25	 0.10000000	 0.10000000	 0.8	0	-3	0	0	0	0	0	0	0	#_CV_young_Fem_GP_1        
- 5e-02	 0.25	 0.10000000	 0.10000000	 0.8	0	-3	0	0	0	0	0	0	0	#_CV_old_Fem_GP_1          
--3e+00	 3.00	 0.00000244	 0.00000244	 0.8	0	-3	0	0	0	0	0	0	0	#_Wtlen_1_Fem_GP_1         
--3e+00	 4.00	 3.34694000	 3.34694000	 0.8	0	-3	0	0	0	0	0	0	0	#_Wtlen_2_Fem_GP_1         
- 5e+01	60.00	55.00000000	55.00000000	 0.8	0	-3	0	0	0	0	0	0	0	#_Mat50%_Fem_GP_1          
--3e+00	 3.00	-0.25000000	-0.25000000	 0.8	0	-3	0	0	0	0	0	0	0	#_Mat_slope_Fem_GP_1       
--3e+00	 3.00	 1.00000000	 1.00000000	 0.8	0	-3	0	0	0	0	0	0	0	#_Eggs/kg_inter_Fem_GP_1   
--3e+00	 3.00	 0.00000000	 0.00000000	 0.8	0	-3	0	0	0	0	0	0	0	#_Eggs/kg_slope_wt_Fem_GP_1
- 1e-01	10.00	 1.00000000	 1.00000000	 1.0	0	-1	0	0	0	0	0	0	0	#_CohortGrowDev            
- 1e-06	 0.99	 0.50000000	 0.50000000	 0.5	0	-1	0	0	0	0	0	0	0	#_FracFemale_GP_1          
+  -10	  45	 21.6535	      36	 10	6	-2	0	0	0	0	0	0	0	#_L_at_Amin_Fem_GP_1       
+   40	  90	 71.6493	      70	 10	6	-4	0	0	0	0	0	0	0	#_L_at_Amax_Fem_GP_1       
+ 0.05	0.25	0.147297	    0.15	0.8	6	-4	0	0	0	0	0	0	0	#_VonBert_K_Fem_GP_1       
+ 0.05	0.25	     0.1	     0.1	0.8	0	-3	0	0	0	0	0	0	0	#_CV_young_Fem_GP_1        
+ 0.05	0.25	     0.1	     0.1	0.8	0	-3	0	0	0	0	0	0	0	#_CV_old_Fem_GP_1          
+   -3	   3	2.44e-06	2.44e-06	0.8	0	-3	0	0	0	0	0	0	0	#_Wtlen_1_Fem_GP_1         
+   -3	   4	 3.34694	 3.34694	0.8	0	-3	0	0	0	0	0	0	0	#_Wtlen_2_Fem_GP_1         
+   50	  60	      55	      55	0.8	0	-3	0	0	0	0	0	0	0	#_Mat50%_Fem_GP_1          
+   -3	   3	   -0.25	   -0.25	0.8	0	-3	0	0	0	0	0	0	0	#_Mat_slope_Fem_GP_1       
+   -3	   3	       1	       1	0.8	0	-3	0	0	0	0	0	0	0	#_Eggs/kg_inter_Fem_GP_1   
+   -3	   3	       0	       0	0.8	0	-3	0	0	0	0	0	0	0	#_Eggs/kg_slope_wt_Fem_GP_1
+  0.1	  10	       1	       1	  1	0	-1	0	0	0	0	0	0	0	#_CohortGrowDev            
+1e-06	0.99	     0.5	     0.5	0.5	0	-1	0	0	0	0	0	0	0	#_FracFemale_GP_1          
 #_no timevary MG parameters
 #
 #_seasonal_effects_on_biology_parms
@@ -94,11 +94,11 @@
 0 # 0/1 to use steepness in initial equ recruitment calculation
 0 # future feature: 0/1 to make realized sigmaR a function of SR curvature
 #_LO	HI	INIT	PRIOR	PR_SD	PR_type	PHASE	env-var	use_dev	dev_mnyr	dev_mxyr	dev_PH	Block	Blk_Fxn # parm_name
- 3.0	31	7.285	10.3	10.00	0	  1	0	0	0	0	0	0	0	#_SR_LN(R0)  
- 0.2	 1	0.990	 0.7	 0.05	0	 -2	0	0	0	0	0	0	0	#_SR_BH_steep
- 0.0	 2	0.100	 0.8	 0.80	0	 -2	0	0	0	0	0	0	0	#_SR_sigmaR  
--5.0	 5	0.000	 0.0	 1.00	0	 -4	0	0	0	0	0	0	0	#_SR_regime  
- 0.0	 0	0.000	 0.0	 0.00	0	-99	0	0	0	0	0	0	0	#_SR_autocorr
+  3	31	7.285	10.3	  10	0	  1	0	0	0	0	0	0	0	#_SR_LN(R0)  
+0.2	 1	 0.99	 0.7	0.05	0	 -2	0	0	0	0	0	0	0	#_SR_BH_steep
+  0	 2	  0.1	 0.8	 0.8	0	 -2	0	0	0	0	0	0	0	#_SR_sigmaR  
+ -5	 5	    0	   0	   1	0	 -4	0	0	0	0	0	0	0	#_SR_regime  
+  0	 0	    0	   0	   0	0	-99	0	0	0	0	0	0	0	#_SR_autocorr
 #_no timevary SR parameters
 1 #do_recdev:  0=none; 1=devvector (R=F(SSB)+dev); 2=deviations (R=F(SSB)+dev); 3=deviations (R=R0*dev; dev2=R-f(SSB)); 4=like 3 with sum(dev2) adding penalty
 40 # first year of main recr_devs; early devs can preceed this era
@@ -140,8 +140,8 @@
 -9999	0	0	0	0	0	#_terminator
 #_Q_parms(if_any);Qunits_are_ln(q)
 #_LO	HI	INIT	PRIOR	PR_SD	PR_type	PHASE	env-var	use_dev	dev_mnyr	dev_mxyr	dev_PH	Block	Blk_Fxn  #  parm_name
--10	10	-2.68665	0	0	0	1	0	0	0	0	0	0	0	#_1
--10	10	-2.90272	0	0	0	1	0	0	0	0	0	0	0	#_2
+-10	10	-2.93443	0	0	0	1	0	0	0	0	0	0	0	#_1
+-10	10	-2.81744	0	0	0	1	0	0	0	0	0	0	0	#_2
 #_no timevary Q parameters
 #
 #_size_selex_patterns
@@ -159,31 +159,31 @@
 #_SizeSelex
 #_No size_selex_parm
 #_AgeSelex
--1002.0	 3	-1e+03	0	0	0	-2	0	0	0	0	0	0	0	#_1 
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_2 
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_3 
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_4 
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_5 
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_6 
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_7 
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_8 
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_9 
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_10
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_11
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_12
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_13
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_14
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_15
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_16
-   -5.0	 9	 1e-02	0	0	0	 2	0	0	0	0	0	0	0	#_17
-   -5.0	 9	 1e+00	0	0	0	 2	0	0	0	0	0	0	0	#_18
-   -5.0	 9	 1e+00	0	0	0	 2	0	0	0	0	0	0	0	#_19
-   -5.0	 9	 1e+00	0	0	0	 2	0	0	0	0	0	0	0	#_20
-   -5.0	 9	 1e+00	0	0	0	 2	0	0	0	0	0	0	0	#_21
-    1.0	20	 5e+00	0	0	0	 2	0	0	0	0	0	0	0	#_31
-    0.1	 5	 1e+00	0	0	0	 2	0	0	0	0	0	0	0	#_41
-    1.0	20	 5e+00	0	0	0	 2	0	0	0	0	0	0	0	#_51
-    0.1	 5	 1e+00	0	0	0	 2	0	0	0	0	0	0	0	#_61
+-1002	 3	-1000	0	0	0	-2	0	0	0	0	0	0	0	#_1 
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_2 
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_3 
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_4 
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_5 
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_6 
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_7 
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_8 
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_9 
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_10
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_11
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_12
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_13
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_14
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_15
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_16
+   -5	 9	 0.01	0	0	0	 2	0	0	0	0	0	0	0	#_17
+   -5	 9	    1	0	0	0	 2	0	0	0	0	0	0	0	#_18
+   -5	 9	    1	0	0	0	 2	0	0	0	0	0	0	0	#_19
+   -5	 9	    1	0	0	0	 2	0	0	0	0	0	0	0	#_20
+   -5	 9	    1	0	0	0	 2	0	0	0	0	0	0	0	#_21
+    1	20	    5	0	0	0	 2	0	0	0	0	0	0	0	#_31
+  0.1	 5	    1	0	0	0	 2	0	0	0	0	0	0	0	#_41
+    1	20	    5	0	0	0	 2	0	0	0	0	0	0	0	#_51
+  0.1	 5	    1	0	0	0	 2	0	0	0	0	0	0	0	#_61
 #_no timevary selex parameters
 #
 0 #  use 2D_AR1 selectivity(0/1):  experimental feature
