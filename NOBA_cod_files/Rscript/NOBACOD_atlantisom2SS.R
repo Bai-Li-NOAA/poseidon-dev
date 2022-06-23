@@ -1,5 +1,5 @@
 # devtools::install_github("r4atlantis/atlantisom")
-# remotes::install_github("kellijohnson-NOAA/saconvert")
+# remotes::install_github("Bai-Li-NOAA/saconvert")
 
 library(atlantisom)
 library(tidyr)
@@ -17,7 +17,7 @@ library(stringr)
 d.name <- here::here("NOBA_cod_files", "NOBA_sacc_30")
 scenario.name <- "nordic_runresults_01"
 
-# Atlantis OM trueth data
+# Atlantis OM true data
 truth <- get(load(file.path(file.path(d.name, "nordic_runresults_01run_truth.RData"))))
 omlist_ss <- readRDS(file=file.path(d.name, "nordic_runresults_01omlist_ss.rds"))
 
@@ -513,7 +513,8 @@ ctl$Growth_Age_for_L2 <- utils::tail(stocksynthesis.data$agebin_vector, 1)
 ctl$MG_parms$PHASE[ctl$MG_parms$PHASE > 0] <- ctl$MG_parms$PHASE[ctl$MG_parms$PHASE > 0] * (-1)
 
 
-ctl$MG_parms[grep("Frac", rownames(ctl$MG_parms)), ] <- c(0.000001, 0.99, 0.5, 0.5, 0.5, 0, -1, 0, 0, 0, 0, 0, 0, 0,14)
+#ctl$MG_parms[grep("Frac", rownames(ctl$MG_parms)), ] <- c(0.000001, 0.99, 0.5, 0.5, 0.5, 0, -1, 0, 0, 0, 0, 0, 0, 0,14)
+ctl$MG_parms[grep("Frac", rownames(ctl$MG_parms)), ] <- c(0.000001, 0.99, 0.5, 0.5, 0.5, 0, -1, 0, 0, 0, 0, 0, 0, 0)
 # ctl$MG_parms[grep("Frac", rownames(ctl$MG_parms)), ] <- c(0.000001, 0.99, 0.99, 0.99, 0.5, 0, -1, 0, 0, 0, 0, 0, 0, 0,14)
 
 ctl$maturity_option <- 5 # disable maturity and use maturity in wtatage.ss?
